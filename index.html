@@ -1,0 +1,191 @@
+<!doctype html>
+
+<html>
+
+<head>
+	<title>Vis/Printer</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf8">
+	<script src="utils.js"></script>
+	<script src="Viewer.js"></script>
+	<script src="lightgl.js"></script>
+	<script src="csg.js"></script>
+	<script src="touchHandler.js"></script>
+	<script src="VisPrinter.js"></script>
+</head>
+<style>
+	td{
+		padding: 0px; 
+		margin: 0px;
+		border:none;
+	}
+	.main, html, body{
+		width: 100%;
+		height: 100%;
+		margin: 0px;
+		padding: 0px;
+		background-color: black;
+		color: #888;
+		font-family: sans-serif;
+	}
+	select, option, input{
+		color: white;
+		background-color: #333;
+		border: none;
+		width: 100px;
+	}
+	.logo{
+		position: absolute; 
+		bottom: 10px;
+		left: 10px;
+		font-size: 12px;
+	}
+	.view{
+		position: absolute; 
+		top: 0px;
+		left: 0px;
+		right: 300px;
+		bottom: 0px;
+	}
+	canvas{
+		position: absolute;
+		left: 0px;
+		top: 0px;
+		right: 0px;
+		bottom: 0px;
+	}
+	.menuPane{
+		position: absolute;
+		right: 0px;
+		bottom: 0px;
+		height: 77px;
+		width: 280px;
+		border-top: 3px solid #fff;
+		font-size:13px;
+		padding: 10px;
+		line-height: 18px;
+	}
+	a{
+		color:#fff;
+	}
+	.treePane{
+		position: absolute;
+		right: 0px;
+		top: 0px;
+		bottom: 100px;
+		width: 300px;
+		overflow: auto;
+	}
+	.tree div{		
+		margin: 2px;
+		padding-left: 2px;
+		-moz-user-select: -moz-none;
+		-webkit-user-select: none;
+	}
+	.tree .collapsed{
+		height: 20px;
+		overflow: hidden;
+		padding-bottom: 2px;
+		border-bottom:  1px dashed #090 !important;
+	}
+	.tree .node.selected{
+		background-color: #030;
+		border-color: #fff;
+	}
+	.tree .node{
+		padding-top:0px;
+		margin-bottom: 4px;
+		border-radius: 10px;
+		-webkit-border-radius: 10px;
+		border: 0px solid #090;
+		border-left: 4px solid #090;
+		border-top: 4px solid #090;
+	}
+	.tree .array .value{
+		display: inline;
+	}
+	.tree .array .value input{
+		width: 45px;
+	}
+
+	.tree .node>div:first-child{
+		padding-right 10px;
+	}
+	.tree .node>div:first-child>input{
+		height: 20px;
+		width: 100%;
+		background-color: transparent;
+	}
+
+	.tree .node>div:first-child>input:focus{
+		height: 20px;
+		width: 100%;
+		background-color: #333;
+	}
+
+	.menuPane input:first-child{
+		width: 200px;
+	}
+
+	#progress{
+		background-color:black;
+		font-size: 12px;
+		position: absolute;
+		width: 0%;
+		height: 20px;
+		width: 100%;
+		left: 0px;
+		bottom: 0px;
+		display: none;
+	}
+	#progress .cancel{
+		color: #fff;
+		position: absolute;
+		right: 5px;
+		top: 2px;
+	}
+	#progress>div{
+		position: absolute;
+		top: 0px;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
+		border: 1px solid #fff;
+	}
+	#progressBar{		
+		position: absolute;
+		left:  2px;
+		top:   2px;
+		bottom:2px;
+		background-color: #fff;
+	}
+	#progressName{
+		color: #000;
+	}
+</style>
+
+<body >
+		<div class=treePane><div class=tree id="treeview"></div></div>
+		<div class=menuPane>
+			<input onkeyup="VisPrinter.search(this.value)" title="issue command by pressing <enter>">
+			<br>
+			<input caption=Import type=file onchange="VisPrinter.loadStl(this.files[0])">
+			<a href="javascript:VisPrinter.slice()" title="slice this object according to current settings">slice</a>
+			<a href="javascript:VisPrinter.print()" title="print this object">print</a>
+		</div>
+		<div id=view class="view" ></div>
+		<div class=logo>Vis/Printer - http://hirnsohle.de/VisPrinter/ - © 2012 Paul Geisler - <a href="README.html">Manual - Credits - Examples</a></div>
+		<div id=progress><div><div id=progressBar><span id=progressName></span></div></div><a class=cancel href='javascript:VisPrinter.cancel()'>cancel</a></div>
+ <script>
+
+	HTMLElement.prototype.removeClass=function(className){
+		var tmp=" "+this.className+" ";
+		tmp=tmp.replace(" "+className+" "," ");
+		tmp=tmp.trim();
+		this.className=tmp;
+	}
+
+	VisPrinter.attach();
+ </script>
+</body>
+</html>
+
