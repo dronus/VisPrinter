@@ -8,7 +8,6 @@
 	<script src="utils.js"></script>
 	<script src="Viewer.js"></script>
 	<script src="lightgl.js"></script>
-	<script src="csg.js"></script>
 	<script src="touchHandler.js"></script>
 	<script src="VisPrinter.js"></script>
 </head>
@@ -73,7 +72,16 @@
 		top: 0px;
 		bottom: 100px;
 		width: 300px;
-		overflow: auto;
+		overflow: hidden;
+	}
+	.console{
+		height: 100%;
+		width: 100%;
+		margin: 0px;
+		padding: 0px;
+		border:0px;
+		color: #fff;
+		background-color: #000;
 	}
 	.tree div{		
 		margin: 2px;
@@ -164,7 +172,7 @@
 </style>
 
 <body >
-		<div class=treePane><div class=tree id="treeview"></div></div>
+		<div class=treePane><textarea class=console id="console"></textarea></div>
 		<div class=menuPane>
 			<input onkeyup="VisPrinter.search(this.value)" title="issue command by pressing <enter>">
 			<br>

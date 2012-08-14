@@ -68,13 +68,13 @@ Viewer=function(container) {
 	');
 
 	// Black shader for wireframe
-	this.blackShader = new GL.Shader('\
+	this.lineShader = new GL.Shader('\
 		void main() {\
 			gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
 		}\
 		', '\
 		void main() {\
-			gl_FragColor = vec4(0.0, 0.0, 0.0, 0.1);\
+			gl_FragColor = vec4(1.0, 1.0, 1.0, 0.3);\
 		}\
 	');
 
@@ -144,7 +144,10 @@ Viewer=function(container) {
 
 		if(that.mesh){
 			gl.enable(gl.POLYGON_OFFSET_FILL);
-			that.lightingShader.uniforms({alpha: 1.0}).draw(that.mesh, gl.TRIANGLES);
+			if(that.mesh.indexBuffers['triangles']) 
+				that.lightingShader.uniforms({alpha: 1.0}).draw(that.mesh, gl.TRIANGLES);
+			if(that.mesh.indexBuffers['lines']    ) 
+				that.lineShader.draw(that.mesh, gl.LINES);
 			gl.disable(gl.POLYGON_OFFSET_FILL);
 		}
 		//gl.disable(gl.DEPTH_TEST);

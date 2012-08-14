@@ -40,6 +40,9 @@ VisPrinter=new function(){
 	};
 
 	this.parseStl=function(stl){
+
+		this.stl=stl;
+
 		var mesh = new GL.Mesh({ normals: true, colors: true });
 
 		var lines=stl.split("\n");
@@ -65,6 +68,67 @@ VisPrinter=new function(){
 		mesh.compile();
 		this.mesh=mesh;
 
+		this.update();
+	}
+
+        this.post=function(path,data, callback){
+                var req = new XMLHttpRequest();
+                req.overrideMimeType ( "text / plain"); 
+                req.onreadystatechange = function () {
+                    if (req.readyState == 4) {
+                                if(req.status!=200) {
+                                        alert("httpGet failed in"+path+", server response:\n"+req.responseText);
+                                }
+                        callback(req.responseText);
+                    }
+                };
+		var formData=new FormData();
+		for(key in data)
+			formData.append(key, data[key]);
+
+                req.open('POST',path, true);
+                req.send(formData);
+        }
+
+	this.slice=function(){
+		if(!this.stl){
+			alert("Nothing to slice. Load some .stl first.");
+			return;
+		}
+		
+		this.post('slic3r.php',{'config':'', 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
+	}
+
+	this.onSliced=function(gcode){
+		this.console.value+=gcode;
+		this.gcode=gcode;
+
+		var mesh = new GL.Mesh({ triangles: false, lines: true, colors: true });
+
+		var pos={'X':0.0, 'Y':0.0, 'Z':0.0};
+		var lines=gcode.split("\n");
+		var index=0;
+		for(var i=0; i<lines.length; i++)
+		{
+			var line=lines[i];
+			var parts=line.split(" ");
+			if(parts[0]=='G1'){
+				for(var j=1; j<parts.length; j++){
+					var part=parts[j];
+					var axis=part.substr(0,1);
+					var value=parseFloat(part.substr(1));
+					pos[axis]=value;
+				}
+				mesh.vertices.push([pos.X-100, pos.Y-100, pos.Z]);
+				if(index>0) {
+					mesh.lines.push([index-1, index]);
+					mesh.colors.push([1,0,0]);
+				}
+				index++;		
+			}
+		}
+		mesh.compile();
+		this.mesh=mesh;
 		this.update();
 	}
 	
@@ -103,6 +167,7 @@ VisPrinter=new function(){
 
 	this.attach=function(){
 		viewer = new Viewer(document.getElementById('view'));
+		this.console=document.getElementById('console');
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
