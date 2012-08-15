@@ -1,0 +1,23 @@
+strict digraph G {
+
+	stl
+
+	subgraph cluster_2 {
+		label = "client machine (www browser)";
+		"stl" -> "VisPrinter client"
+	}
+	subgraph cluster_3 {
+		label="print server";
+		"VisPrinter server" ->	"slic3r"  [dir=both]
+		"VisPrinter server" -> "pronsole.py";
+	}
+	"pronsole.py"  -> "marlin printer" [label="USB"] ; 
+	subgraph cluster_4 {
+		label="optional compute server";
+		"slic3r2" [label="slic3r"];
+		"another VisPrinter server" ->  "slic3r2" [dir=both]
+	}
+
+	"VisPrinter client" -> "VisPrinter server"  [label="http GET/POST"];
+	"VisPrinter server" -> "another VisPrinter server"  [label="http POST"];
+}
