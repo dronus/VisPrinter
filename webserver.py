@@ -1,150 +1,134 @@
 #!/usr/bin/python
 
-# Copyright Jon Berg , turtlemeat.com
-# Modified by nikomu @ code.google.com     
-
-import string,cgi,time,subprocess
-from os import curdir, sep
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import sys,string,cgi,subprocess, random, os, Cookie, BaseHTTPServer,urlparse, pronsole
 
 
-import os # os. path
-
-CWD = os.path.abspath('.')
-## print CWD
-
-# PORT = 8080     
-UPLOAD_PAGE = 'index.html' # must contain a valid link with address and port of the server     s
-
-
-def make_index( relpath ):     
-
-    abspath = os.path.abspath(relpath) # ; print abspath
-    flist = os.listdir( abspath ) # ; print flist
-    
-    rellist = []
-    for fname in flist :     
-        relname = os.path.join(relpath, fname)
-        rellist.append(relname)
-    
-    # print rellist
-    inslist = []
-    for r in rellist :     
-        inslist.append( '<a href="%s">%s</a><br>' % (r,r) )
-    
-    # print inslist
-    
-    page_tpl = "<html><head></head><body>%s</body></html>"     
-    
-    ret = page_tpl % ( '\n'.join(inslist) , )
-    
-    return ret
-
+port=8080
 
 # -----------------------------------------------------------------------
 
-class MyHandler(BaseHTTPRequestHandler):
+
+# a simple stdout T-junction 
+# used to forward pronsole.py outputs to the server
+class Tee(object):
+    def __init__(self, pipe):
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = self
+        self.pipe=pipe
+    def close(self):
+        self.flush()
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+    def write(self, data):
+        self.pipe  .write(data.encode("utf-8"))
+        self.stdout.write(data.encode("utf-8"))
+    def flush(self):
+        self.pipe  .flush()
+        self.stdout.flush()
+
+
+printer=pronsole.pronsole()
+
+class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+
+
+    def serve_file(self,url_path):
+        # map URL path to file in our directory
+        file_path=os.path.abspath('./'+url_path)
+        
+        # prevent the client from accessing any file outside our directory
+        server_path=os.path.abspath('.')
+        if not file_path.startswith(server_path):
+            raise Exception("Illegal path: "+path)
+                    
+        # open the file to serve
+        f = open(file_path)
+
+        # send headers
+        self.send_response(200)
+        self.send_header('Content-type',	'text/html')
+        # establish a random session cookie 
+        if not "Cookie" in self.headers:
+            self.send_header('Set-Cookie','session='+str(random.randint(0,0xFFFFFFFF)));
+
+        self.end_headers()
+        #send file content
+        self.wfile.write(f.read())
+        f.close()
+
+    # issue command via pronsole.py and return result       
+    def serve_pronsole(self,cmd):
+        self.send_response(200)
+        self.end_headers()
+        # install stdout T-junction to pass pronsole's 'print' output to the client
+        tee=Tee(self.wfile)
+        # issue command
+        try:
+            printer.onecmd(cmd)
+        except Exception as e:
+            print e
+        tee.close()
 
     def do_GET(self):
         try:
-            
-            if self.path == '/' :     
-                page = make_index( '.' )
-                self.send_response(200)
-                self.send_header('Content-type',	'text/html')
-                self.end_headers()
-                self.wfile.write(page)
-                return     
+            # split URL parts (path, querystring)
+            url_parts =urlparse.urlparse(self.path)
+            # extract query sting parameters:
+            url_params=urlparse.parse_qs(url_parts.query) 
 
-
-            if self.path.endswith(".html"):
-                ## print curdir + sep + self.path
-                f = open(curdir + sep + self.path)
-                #note that this potentially makes every file on your computer readable by the internet
-
-                self.send_response(200)
-                self.send_header('Content-type',	'text/html')
-                self.end_headers()
-                self.wfile.write(f.read())
-                f.close()
-                return
-                
-            if self.path.endswith(".esp"):   #our dynamic content
-                self.send_response(200)
-                self.send_header('Content-type',	'text/html')
-                self.end_headers()
-                self.wfile.write("hey, today is the" + str(time.localtime()[7]))
-                self.wfile.write(" day in the year " + str(time.localtime()[0]))
-                return
-
-            else : # default: just send the file     
-                
-                filepath = self.path[1:] # remove leading '/'     
-            
-                f = open( os.path.join(CWD, filepath), 'rb' ) 
-                #note that this potentially makes every file on your computer readable by the internet
-
-                self.send_response(200)
-                self.send_header('Content-type',	'application/octet-stream')
-                self.end_headers()
-                self.wfile.write(f.read())
-                f.close()
-                return
-
-            return # be sure not to fall into "except:" clause ?       
-                
+            if url_parts.path=='/pronsole':
+                self.serve_pronsole(url_params.get('cmd')[0])
+            else:
+                self.serve_file(url_parts.path)
         except IOError as e :  
-            # debug     
             print e
             self.send_error(404,'File Not Found: %s' % self.path)
-     
 
     def do_POST(self):
-#	if not self.path=='/slic3r.php':
-#            return
 
         try:
+            # analyse headers to get uploaded content and cookies        
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))     
 
+            # read session cookie            
+            if "Cookie" in self.headers:
+                c = Cookie.SimpleCookie(self.headers["Cookie"])
+                session=c['session'].value
+                # make sure session is a number
+                session=str(int(session))
+            else: raise Exception("No session cookie")
+
+            # extract POSTed stl data                
             if ctype == 'multipart/form-data' : 
                 query=cgi.parse_multipart(self.rfile, pdict)
                 upfilecontent = query.get('stl')
-                print "filecontent", upfilecontent[0]
-
             else: raise Exception("Unexpected POST request")
        
             self.send_response(200)
             self.end_headers()
-
-            stlFile=open('stl.stl','w')
+            # copy POSTed stl data to .stl file
+            stlFile=open(session+'.stl','w')
             stlFile.write(upfilecontent[0])
             stlFile.close()
-
-            subprocess.call('perl ../Slic3r/slic3r.pl -o gcode.gcode stl.stl',shell=True)
-            gcode=open('gcode.gcode', 'r').read()
+            # involke the slic3r
+            subprocess.call('perl ../Slic3r/slic3r.pl -o '+session+'.gcode '+session+'.stl >'+session+'.out',shell=True,stdout=self.wfile)
+            # pass resulting .gcode file content to client
+            gcode=open(session+'.gcode', 'r').read()
             self.wfile.write(gcode)
-            
-#            self.wfile.write("<HTML><HEAD></HEAD><BODY>POST OK.<BR><BR>");
-#            self.wfile.write( "File uploaded under name: " + os.path.split(fullname)[1] );
-#            self.wfile.write(  '<BR><A HREF=%s>back</A>' % ( UPLOAD_PAGE, )  )
-#            self.wfile.write("</BODY></HTML>");
-            
             
         except Exception as e:
             # pass
             print e
             self.send_error(404,'POST to "%s" failed: %s' % (self.path, str(e)) )
 
-def main():
-
-    try:
-        server = HTTPServer(('', 8080), MyHandler)
-        print 'started httpserver...'
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print '^C received, shutting down server'
-        server.socket.close()
 
 if __name__ == '__main__':
-    main()
+    try:
+        server = BaseHTTPServer.HTTPServer(('', port), RequestHandler)
+        print 'server running on port '+str(port)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.socket.close()
 

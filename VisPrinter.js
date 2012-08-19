@@ -1,5 +1,29 @@
 
 
+function getCookieValue(cookieName)
+{
+ var value=null;
+ if(document.cookie != "") 
+ {
+  cookieName=cookieName+"=";
+  
+  var start=document.cookie.indexOf(cookieName);
+  if(start>=0) 
+  {
+   start=start+cookieName.length;
+   
+   var end=document.cookie.indexOf(";", start);
+   if(end<0) end=document.cookie.length;
+   
+   value=document.cookie.substring(start,end);
+   value=unescape(value);
+  }
+ }
+ return value;
+}
+
+
+
 VisPrinter=new function(){
 
 
@@ -98,7 +122,7 @@ VisPrinter=new function(){
 		
 		this.post('slic3r.php',{'config':'', 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
 	}
-
+		
 	this.onSliced=function(gcode){
 		this.console.value+=gcode;
 		this.gcode=gcode;
