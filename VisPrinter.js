@@ -27,6 +27,7 @@ function getCookieValue(cookieName)
 VisPrinter=new function(){
 
 	this.loadStl=function(file){
+    	document.getElementById('slicingStyle').innerHTML='.sliced{visibility: hidden;}';
 		var reader=new FileReader();
 		reader.onload=function(e){
 			var stl=e.target.result;
@@ -133,8 +134,8 @@ VisPrinter=new function(){
 			alert("Nothing to slice. Load some .stl first.");
 			return;
 		}
-		
-		this.httpPost('slic3r',{'config':'', 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
+		var config=document.getElementById('config').value;
+		this.httpPost('slic3r',{'config':config, 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
 	}
 	
 	this.goto=function(form){
@@ -186,20 +187,23 @@ VisPrinter=new function(){
 		mesh.compile();
 		this.mesh=mesh;
 		this.update();
+		document.getElementById('slicingStyle').innerHTML='';
 	}
 	
 	this.connected=false;
 	this.connect=function(){
-	    document.getElementById('connection').innerHTML='connecting...';
+//	    document.getElementById('connection').innerHTML='connecting...';
 	    this.cmd('connect',function(result){
 	        //TODO handle connection
-	        document.getElementById('connection').innerHTML = this.connection ? 'not connected' : 'connected';
+	        document.getElementById('connection'     ).innerHTML= this.connection ? 'not connected' : 'connected';
+	        document.getElementById('connectionStyle').innerHTML= this.connection ? '.connected{visibility: hidden;}' : '';
 	    });	    
 	}
 	
 	this.check=function(){
-	    if(!this.connected) 
-	        this.connect();	
+	    if(!this.connected) {	        	        
+	        this.connect();
+	    }
 	}
 	
 	this.hashchange=function(data)
@@ -219,6 +223,18 @@ VisPrinter=new function(){
 		this.update();
 	}
 
+    this.onConfigs=function(response){
+        var configs=response.split("\n");
+        var select=document.getElementById('config');
+        for(var i=0; i<configs.length; i++){
+            var config=configs[i];
+            if(!config) continue;
+            var option=document.createElement('option');
+            option.value=config;
+            option.innerHTML=config.substr(config.indexOf('/')+1);
+            select.add(option);
+        }    
+    }
 	
 	this.update=function(){
 		//viewer.mesh=viewer.buildMesh(this.csgWorker.getPolygons(this.sceneTree,'root'));
@@ -241,9 +257,11 @@ VisPrinter=new function(){
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
 		window.setInterval(function(e){VisPrinter.check();},1000);
+        this.httpGet('configs',function(response){VisPrinter.onConfigs(response)});
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
 //		this.hashchange();
-		viewer.showAll();		
+		viewer.showAll();
+
 	}
 }
 

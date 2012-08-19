@@ -1,15 +1,12 @@
 #!/usr/bin/python
 
-import sys,string,cgi,subprocess, random, os, Cookie, BaseHTTPServer,urlparse
+import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob
 try:
     import pronsole
     printer=pronsole.pronsole()
 except: 
     pass
 
-os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
-
-port=8082
 
 # -----------------------------------------------------------------------
 
@@ -33,7 +30,6 @@ class Tee(object):
     def flush(self):
         self.pipe  .flush()
         self.stdout.flush()
-
 
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -62,6 +58,15 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write(f.read())
         f.close()
 
+    def serve_configs(self):
+        # send headers
+        self.send_response(200)
+        self.end_headers()
+        #send file content
+        for filename in glob.glob('configs/*.ini'):
+            self.wfile.write(filename+"\n")
+        f.close()
+
     # issue command via pronsole.py and return result       
     def serve_pronsole(self,cmd):
         self.send_response(200)
@@ -84,6 +89,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
             if url_parts.path=='/pronsole':
                 self.serve_pronsole(url_params.get('cmd')[0])
+            elif url_parts.path=='/configs':
+                self.serve_configs()            
             else:
                 self.serve_file(url_parts.path)
         except IOError as e :  
@@ -107,19 +114,20 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             # extract POSTed stl data                
             if ctype == 'multipart/form-data' : 
                 query=cgi.parse_multipart(self.rfile, pdict)
-                upfilecontent = query.get('stl')
+                upfilecontent = query.get('stl')[0]
+                config        = query.get('config')[0]
             else: raise Exception("Unexpected POST request")
        
             self.send_response(200)
             self.end_headers()
             # copy POSTed stl data to .stl file
-            stlFile=open(session+'.stl','w')
-            stlFile.write(upfilecontent[0])
+            stlFile=open('tmp/'+session+'.stl','w')
+            stlFile.write(upfilecontent)
             stlFile.close()
-            # involke the slic3r
-            subprocess.call('perl ../Slic3r/slic3r.pl -o '+session+'.gcode '+session+'.stl >'+session+'.out',shell=True,stdout=self.wfile)
+            # invoke the slic3r
+            subprocess.call(settings.slicer+' --load '+config+' -o tmp/'+session+'.gcode tmp/'+session+'.stl >tmp/'+session+'.out',shell=True)
             # pass resulting .gcode file content to client
-            gcode=open(session+'.gcode', 'r').read()
+            gcode=open('tmp/'+session+'.gcode', 'r').read()
             self.wfile.write(gcode)
             
         except Exception as e:
@@ -129,8 +137,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     try:
-        server = BaseHTTPServer.HTTPServer(('', port), RequestHandler)
-        print 'server running on port '+str(port)
+        os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+        server = BaseHTTPServer.HTTPServer(('', settings.port), RequestHandler)
+        print 'server running on port '+str(settings.port)
         server.serve_forever()
     except KeyboardInterrupt:
         server.socket.close()

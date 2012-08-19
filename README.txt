@@ -19,7 +19,7 @@ How far is it done?
 How to install?
 
 - Place VisPrinter directory on some machine that connects to a RepRap printer
-- Make sure Slic3r is placed next to it, so can be run by 'perl ../Slic3r/slic3r.pl'
+- Make sure Slic3r is placed next to it, so can be run by 'perl ../Slic3r/slic3r.pl' or adjust settings.py
 - Change to the VisPrinter directory and run 'python webserver.py'
 
 
