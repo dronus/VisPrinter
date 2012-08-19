@@ -1,9 +1,15 @@
 #!/usr/bin/python
 
-import sys,string,cgi,subprocess, random, os, Cookie, BaseHTTPServer,urlparse, pronsole
+import sys,string,cgi,subprocess, random, os, Cookie, BaseHTTPServer,urlparse
+try:
+    import pronsole
+    printer=pronsole.pronsole()
+except: 
+    pass
 
+os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
 
-port=8080
+port=8082
 
 # -----------------------------------------------------------------------
 
@@ -29,7 +35,6 @@ class Tee(object):
         self.stdout.flush()
 
 
-printer=pronsole.pronsole()
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -49,7 +54,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
     #    self.send_header('Content-type',	'text/html')
         # establish a random session cookie 
-        if not "Cookie" in self.headers:
+        if not "Cookie" in self.headers or self.headers.get('Cookie').find('session=')==-1:
             self.send_header('Set-Cookie','session='+str(random.randint(0,0xFFFFFFFF)));
 
         self.end_headers()
@@ -118,7 +123,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.wfile.write(gcode)
             
         except Exception as e:
-            # pass
             print e
             self.send_error(404,'POST to "%s" failed: %s' % (self.path, str(e)) )
 

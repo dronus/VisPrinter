@@ -152,6 +152,7 @@ VisPrinter=new function(){
 	this.onCmd=function(result){
 		var console=document.getElementById('console');
 		console.value+=result;
+		console.scrollTop = console.scrollHeight;
 	}
 		
 	this.onSliced=function(gcode){
@@ -192,8 +193,7 @@ VisPrinter=new function(){
 	    document.getElementById('connection').innerHTML='connecting...';
 	    this.cmd('connect',function(result){
 	        //TODO handle connection
-	        
-	        document.getElementById('connection').innerHTML=this.connection ? 'not connected' : 'connected';
+	        document.getElementById('connection').innerHTML = this.connection ? 'not connected' : 'connected';
 	    });	    
 	}
 	
