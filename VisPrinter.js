@@ -95,24 +95,39 @@ VisPrinter=new function(){
 		this.update();
 	}
 
-        this.post=function(path,data, callback){
-                var req = new XMLHttpRequest();
-                req.overrideMimeType ( "text / plain"); 
-                req.onreadystatechange = function () {
-                    if (req.readyState == 4) {
-                                if(req.status!=200) {
-                                        alert("httpGet failed in"+path+", server response:\n"+req.responseText);
-                                }
-                        callback(req.responseText);
-                    }
-                };
-		var formData=new FormData();
-		for(key in data)
-			formData.append(key, data[key]);
+    this.httpPost=function(path,data, callback){
+            var req = new XMLHttpRequest();
+            req.overrideMimeType ( "text / plain"); 
+            req.onreadystatechange = function () {
+                if (req.readyState == 4) {
+                            if(req.status!=200) {
+                                    alert("POST failed in "+path+", server response:\n"+req.responseText);
+                            }
+                    callback(req.responseText);
+                }
+            };
+    	var formData=new FormData();
+    	for(key in data)
+		formData.append(key, data[key]);
 
-                req.open('POST',path, true);
-                req.send(formData);
-        }
+            req.open('POST',path, true);
+            req.send(formData);
+    }
+
+    this.httpGet=function(path,callback){
+            var req = new XMLHttpRequest();
+            req.overrideMimeType ( "text / plain"); 
+            req.onreadystatechange = function () {
+                if (req.readyState == 4) {
+                            if(req.status!=200) {
+                                    alert("GET failed in "+path+", server response:\n"+req.responseText);
+                            }
+                    callback(req.responseText);
+                }
+            };
+        req.open('GET',path, true);
+        req.send(null);
+    }
 
 	this.slice=function(){
 		if(!this.stl){
@@ -120,7 +135,24 @@ VisPrinter=new function(){
 			return;
 		}
 		
-		this.post('slic3r.php',{'config':'', 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
+		this.httpPost('slic3r',{'config':'', 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
+	}
+	
+	this.goto=function(form){
+        var cmd="G1 X"+form.X.value+" Y"+form.Y.value+" Z"+form.Z.value+" E"+form.E.value;
+        this.cmd(cmd);
+	}
+	
+	this.cmd=function(cmd,callback){
+	    var console=document.getElementById('console');
+	    if(!callback) console.value+="\n>"+cmd+"\n";
+	    if(!callback) callback=function(response){VisPrinter.onCmd(response)};
+		this.httpGet('pronsole?cmd='+encodeURIComponent(cmd), callback);
+	}
+	
+	this.onCmd=function(result){
+		var console=document.getElementById('console');
+		console.value+=result;
 	}
 		
 	this.onSliced=function(gcode){
@@ -154,6 +186,21 @@ VisPrinter=new function(){
 		mesh.compile();
 		this.mesh=mesh;
 		this.update();
+	}
+	
+	this.connected=false;
+	this.connect=function(){
+	    document.getElementById('connection').innerHTML='connecting...';
+	    this.cmd('connect',function(result){
+	        //TODO handle connection
+	        
+	        document.getElementById('connection').innerHTML=this.connection ? 'not connected' : 'connected';
+	    });	    
+	}
+	
+	this.check=function(){
+	    if(!this.connected) 
+	        this.connect();	
 	}
 	
 	this.hashchange=function(data)
@@ -194,10 +241,12 @@ VisPrinter=new function(){
 		this.console=document.getElementById('console');
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
+		window.setInterval(function(e){VisPrinter.check();},1000);
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
 //		this.hashchange();
 		viewer.showAll();		
 	}
 }
+
 
 

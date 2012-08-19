@@ -26,11 +26,11 @@
 		color: #888;
 		font-family: sans-serif;
 	}
-	select, option, input{
+	select, option, input, button{
 		color: white;
 		background-color: #333;
 		border: none;
-		width: 100px;
+/*		width: 100px;*/
 	}
 	.logo{
 		position: absolute; 
@@ -42,7 +42,7 @@
 		position: absolute; 
 		top: 0px;
 		left: 0px;
-		right: 300px;
+		right: 400px;
 		bottom: 0px;
 	}
 	canvas{
@@ -56,8 +56,8 @@
 		position: absolute;
 		right: 0px;
 		bottom: 0px;
-		height: 77px;
-		width: 280px;
+		height: 177px;
+		width: 380px;
 		border-top: 3px solid #fff;
 		font-size:13px;
 		padding: 10px;
@@ -66,12 +66,22 @@
 	a{
 		color:#fff;
 	}
+	h2{
+	    font-size: 11px;
+	    color: #999;
+	    margin: 2px;
+	    padding: 0px;	    
+	}
+	form{
+	    margin: 2px;
+	    background-color: #111;
+	}
 	.treePane{
 		position: absolute;
 		right: 0px;
 		top: 0px;
-		bottom: 100px;
-		width: 300px;
+		bottom: 200px;
+		width: 400px;
 		overflow: hidden;
 	}
 	.console{
@@ -82,56 +92,6 @@
 		border:0px;
 		color: #fff;
 		background-color: #000;
-	}
-	.tree div{		
-		margin: 2px;
-		padding-left: 2px;
-		-moz-user-select: -moz-none;
-		-webkit-user-select: none;
-	}
-	.tree .collapsed{
-		height: 20px;
-		overflow: hidden;
-		padding-bottom: 2px;
-		border-bottom:  1px dashed #090 !important;
-	}
-	.tree .node.selected{
-		background-color: #030;
-		border-color: #fff;
-	}
-	.tree .node{
-		padding-top:0px;
-		margin-bottom: 4px;
-		border-radius: 10px;
-		-webkit-border-radius: 10px;
-		border: 0px solid #090;
-		border-left: 4px solid #090;
-		border-top: 4px solid #090;
-	}
-	.tree .array .value{
-		display: inline;
-	}
-	.tree .array .value input{
-		width: 45px;
-	}
-
-	.tree .node>div:first-child{
-		padding-right 10px;
-	}
-	.tree .node>div:first-child>input{
-		height: 20px;
-		width: 100%;
-		background-color: transparent;
-	}
-
-	.tree .node>div:first-child>input:focus{
-		height: 20px;
-		width: 100%;
-		background-color: #333;
-	}
-
-	.menuPane input:first-child{
-		width: 200px;
 	}
 
 	#progress{
@@ -174,11 +134,23 @@
 <body >
 		<div class=treePane><textarea class=console id="console"></textarea></div>
 		<div class=menuPane>
-			<input onkeyup="VisPrinter.search(this.value)" title="issue command by pressing <enter>">
-			<br>
-			<input caption=Import type=file onchange="VisPrinter.loadStl(this.files[0])">
-			<a href="javascript:VisPrinter.slice()" title="slice this object according to current settings">slice</a>
-			<a href="javascript:VisPrinter.print()" title="print this object">print</a>
+			<form onsubmit="return false">
+			    <h2>connect printer</h2>
+			    <span id=connection></span>
+			</form>
+			<form onsubmit="VisPrinter.cmd(this.cmd.value); return false;" ><h2>send gcode</h2>&gt;<input name=cmd title="issue command by pressing <enter>"></form>
+			<form onsubmit="return false;">
+			    <h2>move and calibrate</h2> 
+			    X<input name=X size=2> Y<input name=Y size=2> Z<input name=Z size=2> E<input name=E size=2>
+			    <button onclick="VisPrinter.goto(this.parentNode)" title="go to entered position">go</button>
+			    <button onclick="VisPrinter.cmd('G1 X0 Y0 Z0')" title="go to X0 Y0 Z0">origin</button><button onclick="VisPrinter.cmd('G28')" title="calibrate home position">home</button>
+			</form>
+			<form onsubmit="return false">
+			    <h2>slice and print</h2> 
+    			<input caption=Import type=file onchange="VisPrinter.loadStl(this.files[0])">
+	    		<button onclick="VisPrinter.slice()" title="slice this object according to current settings">slice</button>
+	    		<button onclick="VisPrinter.print()" title="print this object">print</button>
+			</form>
 		</div>
 		<div id=view class="view" ></div>
 		<div class=logo>Vis/Printer - http://hirnsohle.de/VisPrinter/ - © 2012 Paul Geisler - <a href="README.html">Manual - Credits - Examples</a></div>

@@ -33,7 +33,6 @@ printer=pronsole.pronsole()
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-
     def serve_file(self,url_path):
         # map URL path to file in our directory
         file_path=os.path.abspath('./'+url_path)
