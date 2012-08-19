@@ -26,7 +26,6 @@ function getCookieValue(cookieName)
 
 VisPrinter=new function(){
 
-
 	this.loadStl=function(file){
 		var reader=new FileReader();
 		reader.onload=function(e){

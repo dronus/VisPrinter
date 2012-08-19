@@ -47,7 +47,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         # send headers
         self.send_response(200)
-        self.send_header('Content-type',	'text/html')
+    #    self.send_header('Content-type',	'text/html')
         # establish a random session cookie 
         if not "Cookie" in self.headers:
             self.send_header('Set-Cookie','session='+str(random.randint(0,0xFFFFFFFF)));

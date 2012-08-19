@@ -1,0 +1,118 @@
+	td{
+		padding: 0px; 
+		margin: 0px;
+		border:none;
+	}
+	.main, html, body{
+		width: 100%;
+		height: 100%;
+		margin: 0px;
+		padding: 0px;
+		background-color: black;
+		color: #888;
+		font-family: sans-serif;
+	}
+	select, option, input, button{
+		color: white;
+		background-color: #333;
+		border: none;
+/*		width: 100px;*/
+	}
+	.logo{
+		position: absolute; 
+		bottom: 10px;
+		left: 10px;
+		font-size: 12px;
+	}
+	.view{
+		position: absolute; 
+		top: 0px;
+		left: 0px;
+		right: 400px;
+		bottom: 0px;
+	}
+	canvas{
+		position: absolute;
+		left: 0px;
+		top: 0px;
+		right: 0px;
+		bottom: 0px;
+	}
+	.menuPane{
+		position: absolute;
+		right: 0px;
+		bottom: 0px;
+		height: 177px;
+		width: 380px;
+		border-top: 3px solid #fff;
+		font-size:13px;
+		padding: 10px;
+		line-height: 18px;
+	}
+	a{
+		color:#fff;
+	}
+	h2{
+	    font-size: 11px;
+	    color: #999;
+	    margin: 2px;
+	    padding: 0px;	    
+	}
+	form{
+	    margin: 2px;
+	    background-color: #111;
+	}
+	.treePane{
+		position: absolute;
+		right: 0px;
+		top: 0px;
+		bottom: 200px;
+		width: 400px;
+		overflow: hidden;
+	}
+	.console{
+		height: 100%;
+		width: 100%;
+		margin: 0px;
+		padding: 0px;
+		border:0px;
+		color: #fff;
+		background-color: #000;
+	}
+
+	#progress{
+		background-color:black;
+		font-size: 12px;
+		position: absolute;
+		width: 0%;
+		height: 20px;
+		width: 100%;
+		left: 0px;
+		bottom: 0px;
+		display: none;
+	}
+	#progress .cancel{
+		color: #fff;
+		position: absolute;
+		right: 5px;
+		top: 2px;
+	}
+	#progress>div{
+		position: absolute;
+		top: 0px;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
+		border: 1px solid #fff;
+	}
+	#progressBar{		
+		position: absolute;
+		left:  2px;
+		top:   2px;
+		bottom:2px;
+		background-color: #fff;
+	}
+	#progressName{
+		color: #000;
+	}
+
