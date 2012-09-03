@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob
+import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob,traceback
 try:
     import pronsole
     printer=pronsole.pronsole()
@@ -8,10 +8,7 @@ except:
     pass
 
 
-# -----------------------------------------------------------------------
-
-
-# a simple stdout T-junction 
+# A simple stdout T-junction 
 # used to forward pronsole.py outputs to the server
 class Tee(object):
     def __init__(self, pipe):
@@ -30,7 +27,6 @@ class Tee(object):
     def flush(self):
         self.pipe  .flush()
         self.stdout.flush()
-
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -65,7 +61,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         #send file content
         for filename in glob.glob('configs/*.ini'):
             self.wfile.write(filename+"\n")
-        f.close()
 
     # issue command via pronsole.py and return result       
     def serve_pronsole(self,cmd):
@@ -80,60 +75,77 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             print e
         tee.close()
 
+    def serve_slic3r(self,session_id):
+        self.send_response(200)
+        self.end_headers()
+        # invoke the slic3r
+        subprocess.call(settings.slicer+' --load config.ini -o tmp/'+session_id+'.gcode tmp/'+session_id+'.stl >tmp/'+session_id+'.out',shell=True)
+        # pass resulting .gcode file content to client
+        gcode=open('tmp/'+session_id+'.gcode', 'r').read()
+        self.wfile.write(gcode)
+            
+    def save_tmp(self,name,content):
+       # copy content to file
+       f=open('tmp/'+name,'w')
+       f.write(content)
+       f.close()
+        
+    def save_uploads(self, session_id):
+        # assert valid session_id
+        if not session_id:
+            raise Exception("No session cookie")
+        contenttype_header=self.headers.getheader('content-type',False)
+        if not contenttype_header:
+             return
+        # check if contenttype is multipart, exit otherwise
+        ctype, pdict = cgi.parse_header(contenttype_header) 
+        if not ctype == 'multipart/form-data': 
+            return            
+        parts=cgi.parse_multipart(self.rfile, pdict)
+        # save every uploaded file, using the session_id as prefix and the HTML field name as suffix.
+        for key, contents in parts.items():
+            self.save_tmp(session_id+'.'+key, contents[0])
+
+    def get_session(self):
+        id=False
+        if "Cookie" in self.headers:
+            c = Cookie.SimpleCookie(self.headers["Cookie"])
+            id=c['session'].value
+            # make sure session is a number
+            if not id.isdigit(): 
+                raise Exception('Invalid session cookie')
+        return id        
+
     def do_GET(self):
+        self.serve_request()
+        
+    def do_POST(self):
+        self.serve_request()
+        
+    def serve_request(self):
+
         try:
             # split URL parts (path, querystring)
             url_parts =urlparse.urlparse(self.path)
-            # extract query sting parameters:
+            # extract query string parameters:
             url_params=urlparse.parse_qs(url_parts.query) 
-
+            # read session cookie 
+            session_id=self.get_session()
+            # save all POSTed files to /tmp
+            self.save_uploads(session_id)
+            
             if url_parts.path=='/pronsole':
                 self.serve_pronsole(url_params.get('cmd')[0])
             elif url_parts.path=='/configs':
-                self.serve_configs()            
+                self.serve_configs()
+            elif url_parts.path=='/slic3r':
+                self.serve_slic3r(session_id)            
             else:
                 self.serve_file(url_parts.path)
-        except IOError as e :  
-            print e
-            self.send_error(404,'File Not Found: %s' % self.path)
-
-    def do_POST(self):
-
-        try:
-            # analyse headers to get uploaded content and cookies        
-            ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))     
-
-            # read session cookie            
-            if "Cookie" in self.headers:
-                c = Cookie.SimpleCookie(self.headers["Cookie"])
-                session=c['session'].value
-                # make sure session is a number
-                session=str(int(session))
-            else: raise Exception("No session cookie")
-
-            # extract POSTed stl data                
-            if ctype == 'multipart/form-data' : 
-                query=cgi.parse_multipart(self.rfile, pdict)
-                upfilecontent = query.get('stl')[0]
-                config        = query.get('config')[0]
-            else: raise Exception("Unexpected POST request")
-       
-            self.send_response(200)
-            self.end_headers()
-            # copy POSTed stl data to .stl file
-            stlFile=open('tmp/'+session+'.stl','w')
-            stlFile.write(upfilecontent)
-            stlFile.close()
-            # invoke the slic3r
-            subprocess.call(settings.slicer+' --load '+config+' -o tmp/'+session+'.gcode tmp/'+session+'.stl >tmp/'+session+'.out',shell=True)
-            # pass resulting .gcode file content to client
-            gcode=open('tmp/'+session+'.gcode', 'r').read()
-            self.wfile.write(gcode)
-            
+           
         except Exception as e:
-            print e
-            self.send_error(404,'POST to "%s" failed: %s' % (self.path, str(e)) )
-
+            print traceback.format_exc()
+            self.send_error(404,'Request to "%s" failed: %s' % (self.path, str(e)) )
 
 if __name__ == '__main__':
     try:
