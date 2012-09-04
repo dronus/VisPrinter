@@ -1,12 +1,23 @@
 #!/usr/bin/python
 
 import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob
-try:
-    import pronsole
-    printer=pronsole.pronsole()
-except: 
-    pass
+from SocketServer import ThreadingMixIn
 
+
+recv_buffer=[]
+def recv_printer(line):
+    global recv_buffer
+    print "OUTPUT:",line
+    recv_buffer+=[line]
+
+#try:
+import pronsole
+printer=pronsole.pronsole()
+recv_buffer=[]
+printer.recvlisteners+=[recv_printer]
+#except Exception as e : 
+#    print e
+	
 
 # -----------------------------------------------------------------------
 
@@ -33,6 +44,15 @@ class Tee(object):
 
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+
+    def serve_printer(self):
+        global recv_buffer
+        self.send_response(200)
+        self.end_headers()
+	tmp_buffer=recv_buffer
+        recv_buffer=[]
+        for line in tmp_buffer:
+        	self.wfile.write(line)
 
     def serve_file(self,url_path):
         # map URL path to file in our directory
@@ -91,6 +111,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.serve_pronsole(url_params.get('cmd')[0])
             elif url_parts.path=='/configs':
                 self.serve_configs()            
+            elif url_parts.path=='/printer':
+                self.serve_printer()      
             else:
                 self.serve_file(url_parts.path)
         except IOError as e :  
@@ -135,10 +157,14 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_error(404,'POST to "%s" failed: %s' % (self.path, str(e)) )
 
 
+class ThreadingServer(ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    pass
+
+
 if __name__ == '__main__':
     try:
         os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
-        server = BaseHTTPServer.HTTPServer(('', settings.port), RequestHandler)
+        server = ThreadingServer(('', settings.port), RequestHandler)
         print 'server running on port '+str(settings.port)
         server.serve_forever()
     except KeyboardInterrupt:

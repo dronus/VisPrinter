@@ -142,6 +142,17 @@ VisPrinter=new function(){
         var cmd="G1 X"+form.X.value+" Y"+form.Y.value+" Z"+form.Z.value+" E"+form.E.value;
         this.cmd(cmd);
 	}
+
+	this.getSession=function(){
+		return getCookieValue("session");
+	}
+
+	this.print=function(){
+		var session=this.getSession();
+		alert(session);
+		this.cmd("load tmp/"+session+".gcode");
+		this.cmd("print");
+	}
 	
 	this.cmd=function(cmd,callback){
 	    var console=document.getElementById('console');
@@ -193,19 +204,35 @@ VisPrinter=new function(){
 	this.connected=false;
 	this.connect=function(){
 //	    document.getElementById('connection').innerHTML='connecting...';
-	    this.cmd('connect',function(result){
-	        //TODO handle connection
-	        document.getElementById('connection'     ).innerHTML= this.connection ? 'not connected' : 'connected';
-	        document.getElementById('connectionStyle').innerHTML= this.connection ? '.connected{visibility: hidden;}' : '';
-	    });	    
+	    this.cmd('connect');            
 	}
 	
 	this.check=function(){
-	    if(!this.connected) {	        	        
+
+            VisPrinter.httpGet('printer',function(result){
+                VisPrinter.onCheck(result);
+            });
+
+	    if(!this.connected) {
 	        this.connect();
+	        window.setTimeout(function(e){VisPrinter.check();},1000);
 	    }
+            else
+                window.setTimeout(function(e){VisPrinter.check();},1000);
 	}
 	
+        this.onCheck=function(result){
+            var lines=result.split('\n')            
+            for(var i=0; i<lines.length; i++){
+                var line=lines[i];
+                if(!line) continue;
+                if(line.indexOf('ok ')==0) this.connected=true;
+		this.console.value+=line+"\n";
+            }
+	    document.getElementById('connection'     ).innerHTML= this.connection ? 'not connected' : 'connected';
+            document.getElementById('connectionStyle').innerHTML= this.connection ? '.connected{visibility: hidden;}' : '';
+        }
+
 	this.hashchange=function(data)
 	{
 		if(this.justSaved) {
@@ -256,7 +283,7 @@ VisPrinter=new function(){
 		this.console=document.getElementById('console');
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
-		window.setInterval(function(e){VisPrinter.check();},1000);
+		this.check();
         this.httpGet('configs',function(response){VisPrinter.onConfigs(response)});
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
 //		this.hashchange();
