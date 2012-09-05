@@ -1,0 +1,48 @@
+<!doctype html>
+
+<html>
+
+<head>
+	<title>Vis/Printer</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf8">
+	<script src="VisPrinter.js"></script>
+    <link rel="stylesheet" type="text/css" href="base.css">    
+    <link rel="stylesheet" type="text/css" href="full.css">
+</head>
+<body>
+	<style>
+		#editor{
+			position: absolute;
+			top: 30px;
+			bottom: 10px;
+			left: 10px;
+			right: 10px;
+		}
+	</style>
+	<form method=POST enctype=multipart/form-data>
+		<input type=text id=name onchange="setName(this.value)">
+		<button>save</button>
+		<textarea id=editor>
+		</textarea>
+	</form>
+	<script>
+		var file=document.location.search.substring(1);
+		var onLoad=function(response){
+			var name  =document.getElementById('name');
+			var editor=document.getElementById('editor');
+			editor.value=response;
+			editor.name=file;
+			name.value=file;
+			editor.parentNode.action=document.location;
+		}
+		VisPrinter.httpGet(file,onLoad);
+
+		function setName(name){
+			var editor=document.getElementById('editor');
+			editor.name=name;
+			editor.parentNode.action=document.location.pathname+'?'+name;
+		}
+	</script>
+</body>
+</html>
+

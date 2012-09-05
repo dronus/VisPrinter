@@ -11,26 +11,6 @@ def recv_printer(line):
     recv_buffer+=[line]
 printer.recvlisteners+=[recv_printer]
 
-# A simple stdout T-junction 
-# used to forward pronsole.py outputs to the server
-#class Tee(object):
-#    def __init__(self, pipe):
-#        self.stdout = sys.stdout
-#        self.stderr = sys.stderr
-#        sys.stdout = self
-#        sys.stderr = self
-#        self.pipe=pipe
-#    def close(self):
-#        self.flush()
-#        sys.stdout = self.stdout
-#        sys.stderr = self.stderr
-#    def write(self, data):
-#        self.pipe  .write(data.encode("utf-8"))
-#        self.stdout.write(data.encode("utf-8"))
-#    def flush(self):
-#        self.pipe  .flush()
-#        self.stdout.flush()
-
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def serve_printer(self):
@@ -87,18 +67,19 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             print e
         #tee.close()
 
-    def serve_slic3r(self,session_id):
+    def serve_slic3r(self,session_id,config):
         self.send_response(200)
         self.end_headers()
         # invoke the slic3r
-        subprocess.call(settings.slicer+' --load configs/config.ini -o tmp/'+session_id+'.gcode tmp/'+session_id+'.stl >tmp/'+session_id+'.out',shell=True)
+        subprocess.call(settings.slicer+' --load '+config+' -o tmp/'+session_id+'.gcode tmp/'+session_id+'.stl >tmp/'+session_id+'.out',shell=True)
         # pass resulting .gcode file content to client
         gcode=open('tmp/'+session_id+'.gcode', 'r').read()
         self.wfile.write(gcode)
             
     def save_tmp(self,name,content):
        # copy content to file
-       f=open('tmp/'+name,'w')
+       print 'Saving to ',name
+       f=open(name,'w')
        f.write(content)
        f.close()
         
@@ -116,7 +97,11 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             raise Exception("No session cookie")
         # save every uploaded file, using the session_id as prefix and the HTML field name as suffix.
         for key, contents in parts.items():
-            self.save_tmp(session_id+'.'+key, contents[0])
+            if key.startswith('configs/'):
+                filename=key
+            else:
+                filename='tmp/'+session_id+'.'+key;
+            self.save_tmp(filename, contents[0])
 
     def get_session(self):
         id=False
@@ -153,7 +138,10 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             elif url_parts.path=='/printer':
                 self.serve_printer()      
             elif url_parts.path=='/slic3r':
-                self.serve_slic3r(session_id)
+                self.serve_slic3r(session_id,url_params.get('config')[0])
+            elif url_parts.path=='/upload':
+		self.send_response(200)
+		self.end_headers()
             else:
                 self.serve_file(url_parts.path)
            

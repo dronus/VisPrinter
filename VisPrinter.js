@@ -129,13 +129,46 @@ VisPrinter=new function(){
         req.send(null);
     }
 
+
+	this.progress=function(caption, p){
+
+		var indic         =document.getElementById('progress');
+		var bar           =document.getElementById('progressBar');
+		var captionElement=document.getElementById('progressName');
+
+		if(!caption) caption='';
+		captionElement.innerHTML=caption;
+
+		if (!p || p==1) indic.style.display='none';
+		else            indic.style.display='block';
+		if(p==1) p=0;
+		if(p<0.1) p=0.1;
+		bar.style.width=(p*100)+'%';
+	}
+
 	this.slice=function(){
 		if(!this.stl){
 			alert("Nothing to slice. Load some .stl first.");
 			return;
 		}
+
 		var config=document.getElementById('config').value;
-		this.httpPost('slic3r',{'config':config, 'stl':this.stl}, function(response){VisPrinter.onSliced(response)});
+		var onUploaded=function(response){
+			VisPrinter.progress("Slicing...",.5);
+			VisPrinter.httpGet('slic3r?config='+config,function(response){
+				VisPrinter.progress();
+				VisPrinter.onSliced(response)
+			});
+		}
+
+
+		this.httpPost('upload',{'stl':this.stl}, onUploaded);
+		VisPrinter.progress("Uploading...",.5);
+	}
+
+	this.editConfig=function(){
+		var config=document.getElementById('config').value;
+		window.open('edit.html?'+config);
 	}
 	
 	this.goto=function(form){

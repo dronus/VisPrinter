@@ -114,5 +114,6 @@
 	}
 	#progressName{
 		color: #000;
+		text-decoration: blink;
 	}
 
