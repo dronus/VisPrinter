@@ -13,8 +13,14 @@ What's included?
 How far is it done?
 
 - Work in progress
-- Not tested with any real printer
-- 'print' feature not implemented so far
+- Done some successful prints
+
+
+What is needed?
+
+- A Printrun compatible RepRap style machine connected to a python capable machine
+- A modern webbrowser to use (WebGl capable)
+
 
 How to install?
 
@@ -38,5 +44,15 @@ What is it good for?
 - A small server can be mounted to a printer to provide an UI to everyone without the need of installing pronterface and Slic3r
 - This mounted server can be a small box (eg. Raspberry Pi) mounted to the printer itself. Anyone could use the printer just by the means of his browser then.
 - If mounted, the server will concentrate configuration and logging for that printer.
-- Future: Remotely access Slic3r (exposed by the same server) on powerful machines. This further enhances the usability of a small server mounted to the printer.
 
+
+What will happen in the future?
+
+- Make WebGl previews optional
+- Optional compact user interface for mobile devices or printer mounted touch displays
+- Remotely invoke Slic3r on powerful machines. This further enhances the usability of a small server mounted to the printer.
+
+
+Credits
+
+- Based on https://github.com/kliment/Printrun
