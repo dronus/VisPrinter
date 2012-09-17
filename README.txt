@@ -51,7 +51,7 @@ What will happen in the future?
 - Make WebGl previews optional
 - Optional compact user interface for mobile devices or printer mounted touch displays
 - Remotely invoke Slic3r on powerful machines. This further enhances the usability of a small server mounted to the printer.
-
+- Progress feedback while slicing
 
 Credits
 
