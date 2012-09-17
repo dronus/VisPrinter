@@ -55,4 +55,5 @@ What will happen in the future?
 
 Credits
 
-- Based on https://github.com/kliment/Printrun
+- Based on Printrun - https://github.com/kliment/Printrun
+- Uses lightgl.js - https://github.com/evanw/lightgl.js
