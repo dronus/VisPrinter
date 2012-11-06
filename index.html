@@ -3,7 +3,7 @@
 <html>
 
 <head>
-	<title>Vis/PrinterFork</title>
+	<title>Vis/Printer</title>
 	<meta http-equiv="content-type" content="text/html; charset=utf8">
 <!--	<script src="utils.js"></script>-->
 	<script src="Viewer.js"></script>
@@ -44,7 +44,7 @@
 			    <h2>heating</h2> 
 			    extruder<input name=t_extruder size=2> bed<input name=t_bed size=2> 
 			    <button onclick="VisPrinter.cmd('M104 S'+this.parentNode.t_extruder.value); VisPrinter.cmd('M140 S'+this.parentNode.t_bed.value)">set</button>
-			    <button onclick="VisPrinter.cmd('M104 S0'); VisPrinter.cmd('M140 0')" title="stop heating">off</button>
+			    <button onclick="VisPrinter.cmd('M104 S0'); VisPrinter.cmd('M140 S0')" title="stop heating">off</button>
 			</form>
 			<form onsubmit="return false">
 			    <h2>slice</h2>
