@@ -312,7 +312,11 @@ VisPrinter=new function(){
 	};
 
 	this.attach=function(){
-		viewer = new Viewer(document.getElementById('view'));
+		var viewPane=document.getElementById('view');
+		if(viewPane) {
+			viewer = new Viewer(viewPane);
+			viewer.showAll();
+		}
 		this.console=document.getElementById('console');
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
@@ -320,7 +324,7 @@ VisPrinter=new function(){
         this.httpGet('configs',function(response){VisPrinter.onConfigs(response)});
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
 //		this.hashchange();
-		viewer.showAll();
+		
 
 	}
 }
