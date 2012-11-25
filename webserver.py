@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob,traceback
+import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob,traceback,re,thread
 from SocketServer import ThreadingMixIn
 import pronsole
 printer=pronsole.pronsole()
@@ -10,7 +10,7 @@ def recv_printer(line):
     print "OUTPUT:",line
     recv_buffer+=[line]
 printer.recvlisteners+=[recv_printer]
-
+progress=0
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def serve_printer(self):
@@ -70,12 +70,49 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def serve_slic3r(self,session_id,config):
         self.send_response(200)
         self.end_headers()
-        # invoke the slic3r
-        subprocess.call(settings.slicer+' --load '+config+' -o tmp/'+session_id+'.gcode tmp/'+session_id+'.stl >tmp/'+session_id+'.out',shell=True)
-        # pass resulting .gcode file content to client
-        gcode=open('tmp/'+session_id+'.gcode', 'r').read()
-        self.wfile.write(gcode)
-            
+        # invoke the slic3r with progress indicator
+	self.call_monitored(settings.slicer+' --debug --load '+config+' -o tmp/'+session_id+'.gcode tmp/'+session_id+'.stl',self.monitor_slic3r)	
+	# pass resulting .gcode file content to client
+	gcode=open('tmp/'+session_id+'.gcode', 'r').read()
+	self.wfile.write(gcode)
+
+    def serve_progress(self,session_id):
+        self.send_response(200)
+        self.end_headers()
+	self.wfile.write(str(progress))
+ 
+    def monitor_slic3r(self,line):
+        global progress
+        match=re.match('Making surfaces for layer ([0-9]+)',line)
+        if match:
+            self.slic3r_layers=int(match.group(1))
+        match=re.match('Filling layer ([0-9]+)',line)
+        if match:
+            progress=30+int(match.group(1))*70/self.slic3r_layers
+            print 'Slic3r progress:',progress
+
+    def monitor(self, fd, callback): 
+	pipe=os.fdopen(fd)
+	while True:
+		line=pipe.readline()
+		if not line: break
+		callback(line)
+	os.close(fd)
+
+ 
+    # run a command and collect stderr, stdout to a buffer for interactive access
+    # this is useful to serve a progress indicator for commands providing some progress output
+    def call_monitored(self, cmdline, callback):
+	global progress
+	progress=0
+        # create a pipe to capture stderr,stdout 
+	pipeout,pipein=os.pipe()
+        # child thread, collect the command's output
+        thread.start_new_thread(self.monitor,(pipeout,callback))
+	# main thread, run the command
+	subprocess.call(cmdline,shell=True,stdout=pipein,stderr=pipein)
+	os.close(pipein)
+
     def save_tmp(self,name,content):
        # copy content to file
        print 'Saving to ',name
@@ -139,6 +176,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.serve_printer()      
             elif url_parts.path=='/slic3r':
                 self.serve_slic3r(session_id,url_params.get('config')[0])
+            elif url_parts.path=='/progress':
+                self.serve_progress(session_id)
             elif url_parts.path=='/upload':
 		self.send_response(200)
 		self.end_headers()
@@ -156,8 +195,8 @@ class ThreadingServer(ThreadingMixIn, BaseHTTPServer.HTTPServer):
 if __name__ == '__main__':
     try:
         os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
-        #server = ThreadingServer(('', settings.port), RequestHandler)
-        server = BaseHTTPServer.HTTPServer(('', settings.port), RequestHandler)
+        server = ThreadingServer(('', settings.port), RequestHandler)
+        #server = BaseHTTPServer.HTTPServer(('', settings.port), RequestHandler)
         print 'server running on port '+str(settings.port)
         server.serve_forever()
     except KeyboardInterrupt:

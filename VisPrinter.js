@@ -26,12 +26,15 @@ function getCookieValue(cookieName)
 
 VisPrinter=new function(){
 
-	this.loadStl=function(file){
-    	document.getElementById('slicingStyle').innerHTML='.sliced{visibility: hidden;}';
+	this.load=function(file){
+		document.getElementById('slicingStyle').innerHTML='.sliced{visibility: hidden;}';
 		var reader=new FileReader();
 		reader.onload=function(e){
-			var stl=e.target.result;
-			VisPrinter.parseStl(stl);
+			var text=e.target.result;
+			var suffix=file.name.substring(file.name.lastIndexOf('.'));
+			if     (suffix=='.stl'  ) VisPrinter.parseStl(text);
+			else if(suffix=='.gcode') VisPrinter.onSliced(text);
+			else alert('Bad file type '+suffix);
 		}
 		reader.onerror=function(e){
 			alert(e.message);
@@ -119,9 +122,9 @@ VisPrinter=new function(){
             req.overrideMimeType ( "text / plain"); 
             req.onreadystatechange = function () {
                 if (req.readyState == 4) {
-                            if(req.status!=200) {
+/*                            if(req.status!=200) {
                                     alert("GET failed in "+path+", server response:\n"+req.responseText);
-                            }
+                            }*/
                     callback(req.responseText);
                 }
             };
@@ -146,6 +149,19 @@ VisPrinter=new function(){
 		bar.style.width=(p*100)+'%';
 	}
 
+	this.onProgress=function(caption,response){
+		if(!response) response='0';
+		var progress=parseInt(response);
+		this.progress(caption, progress/100);
+
+		// check again until completed
+		if(progress!=-1) window.setTimeout(function(){
+			VisPrinter.httpGet('progress',function(response){
+				VisPrinter.onProgress(caption, response);
+			});
+		},1000);
+	}
+
 	this.slice=function(){
 		if(!this.stl){
 			alert("Nothing to slice. Load some .stl first.");
@@ -154,13 +170,11 @@ VisPrinter=new function(){
 
 		var config=document.getElementById('config').value;
 		var onUploaded=function(response){
-			VisPrinter.progress("Slicing...",.5);
+			VisPrinter.onProgress('Slicing...');
 			VisPrinter.httpGet('slic3r?config='+config,function(response){
-				VisPrinter.progress();
 				VisPrinter.onSliced(response)
 			});
 		}
-
 
 		this.httpPost('upload',{'stl':this.stl}, onUploaded);
 		VisPrinter.progress("Uploading...",.5);
@@ -262,8 +276,8 @@ VisPrinter=new function(){
                 if(line.indexOf('ok ')==0) this.connected=true;
 		this.console.value+=line+"\n";
             }
-	    document.getElementById('connection'     ).innerHTML= this.connection ? 'not connected' : 'connected';
-            document.getElementById('connectionStyle').innerHTML= this.connection ? '.connected{visibility: hidden;}' : '';
+	    document.getElementById('connection'     ).innerHTML= this.connection ? 'connected' : 'not connected';
+            document.getElementById('connectionStyle').innerHTML= this.connection ?  '' : '.connected{visibility: hidden;}';
         }
 
 	this.hashchange=function(data)
@@ -321,7 +335,7 @@ VisPrinter=new function(){
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
 		this.check();
-        this.httpGet('configs',function(response){VisPrinter.onConfigs(response)});
+		this.httpGet('configs',function(response){VisPrinter.onConfigs(response)});
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
 //		this.hashchange();
 		
