@@ -11,66 +11,68 @@
 	<script src="util.js"></script>
 <!--	<script src="touchHandler.js"></script>-->
 	<script src="VisPrinter.js"></script>
-    <link rel="stylesheet" type="text/css" href="base.css">    
-    <link rel="stylesheet" type="text/css" href="full.css">
-    <script>
-        function changeCSS(cssFile) {
-            var oldlink = document.getElementsByTagName("link").item(1);
-            var newlink = document.createElement("link")
-            newlink.setAttribute("rel", "stylesheet");
-            newlink.setAttribute("type", "text/css");
-            newlink.setAttribute("href", cssFile);
-            document.getElementsByTagName("head").item(0).replaceChild(newlink, oldlink);
-        }
-    </script>
+	<link rel="stylesheet" type="text/css" href="base.css">	
+	<link rel="stylesheet" type="text/css" href="full.css">
+	<script>
+		function changeCSS(cssFile) {
+			var oldlink = document.getElementsByTagName("link").item(1);
+			var newlink = document.createElement("link")
+			newlink.setAttribute("rel", "stylesheet");
+			newlink.setAttribute("type", "text/css");
+			newlink.setAttribute("href", cssFile);
+			document.getElementsByTagName("head").item(0).replaceChild(newlink, oldlink);
+		}
+	</script>
 </head>
 <body>
-        <style id=connectionStyle></style>
-        <style id=slicingStyle>.sliced{visibility: hidden;}</style>
+		<style id=connectionStyle></style>
+		<style id=slicingStyle>.sliced{visibility: hidden;}</style>
 		<div class=treePane><textarea class=console id="console"></textarea></div>
 		<div class=menuPane>
 			<form onsubmit="return false">
-			    <h2>connect printer</h2>
-			    <span id=connection></span>
+				<h2>connect printer</h2>
+				<span id=connection></span>
 			</form>
 			<form class=connected onsubmit="VisPrinter.cmd(this.cmd.value); return false;" ><h2>send gcode</h2>&gt;<input name=cmd title="issue command by pressing <enter>"></form>
 			<form class=connected onsubmit="return false;">
-			    <h2>move and calibrate</h2> 
-			    X<input name=X size=2> Y<input name=Y size=2> Z<input name=Z size=2> E<input name=E size=2>
-			    <button onclick="VisPrinter.goto(this.parentNode)" title="go to entered position">go</button>
-			    <button onclick="VisPrinter.cmd('G1 X0 Y0 Z0')" title="go to X0 Y0 Z0">origin</button><button onclick="VisPrinter.cmd('G28')" title="calibrate home position">home</button>
+				<h2>move and calibrate</h2> 
+				X<input name=X size=2> Y<input name=Y size=2> Z<input name=Z size=2> E<input name=E size=2>
+				<button onclick="VisPrinter.goto(this.parentNode)" title="go to entered position">go</button>
+				<button onclick="VisPrinter.cmd('G1 X0 Y0 Z0')" title="go to X0 Y0 Z0">origin</button><button onclick="VisPrinter.cmd('G28')" title="calibrate home position">home</button>
 			</form>
 			<form class=connected onsubmit="return false;">
-			    <h2>heating</h2> 
-			    extruder<input name=t_extruder size=2> bed<input name=t_bed size=2> 
-			    <button onclick="VisPrinter.cmd('M104 S'+this.parentNode.t_extruder.value); VisPrinter.cmd('M140 S'+this.parentNode.t_bed.value)">set</button>
-			    <button onclick="VisPrinter.cmd('M104 S0'); VisPrinter.cmd('M140 S0')" title="stop heating">off</button>
+				<h2>heating</h2> 
+				extruder<input name=t_extruder size=2> bed<input name=t_bed size=2> 
+				<button onclick="VisPrinter.cmd('M104 S'+this.parentNode.t_extruder.value); VisPrinter.cmd('M140 S'+this.parentNode.t_bed.value)">set</button>
+				<button onclick="VisPrinter.cmd('M104 S0'); VisPrinter.cmd('M140 S0')" title="stop heating">off</button>
 			</form>
 			<form onsubmit="return false">
-			    <h2>slice</h2>
-    			<input caption=Import name=stl type=file onchange="VisPrinter.loadStl(this.files[0])">
-    			<button onclick="VisPrinter.loadStl(this.parentNode.stl.files[0])" title="load this file again">reload</button>
-    			<br>
-                <select name=config id=config></select> 
-                <button onclick="VisPrinter.editConfig()" title="edit current settings">edit</button>
-                <button onclick="VisPrinter.slice()" title="slice this object according to current settings">slice</button>
+				<h2>load</h2>
+				<input caption=Import name=stl type=file onchange="VisPrinter.load(this.files[0])">
+				<button onclick="VisPrinter.load(this.parentNode.stl.files[0])" title="load this file again">reload</button>
+			</form>
+			<form onsubmit="return false">
+				<h2>slice</h2>
+				<select name=config id=config></select> 
+				<button onclick="VisPrinter.editConfig()" title="edit current settings">edit</button>
+				<button onclick="VisPrinter.slice()" title="slice this object according to current settings">slice</button>
 			</form>
 			<form class=connected onsubmit="return false">
-			    <h2>print</h2>
-			    <button onclick="VisPrinter.prepare()" title="prepare printer for printing (optional)">prepare</button>
-			    <button onclick="VisPrinter.print()"  class=sliced  title="print this object">print</button>
-			    <button onclick="VisPrinter.pause()"   title="pause printing">pause</button>
-			    <button onclick="VisPrinter.eject()"   title="cancel print and eject object">eject</button>
-			    <br>
-			    <span id=status></span>
+				<h2>print</h2>
+				<button onclick="VisPrinter.prepare()" title="prepare printer for printing (optional)">prepare</button>
+				<button onclick="VisPrinter.print()"  class=sliced  title="print this object">print</button>
+				<button onclick="VisPrinter.pause()"   title="pause printing">pause</button>
+				<button onclick="VisPrinter.eject()"   title="cancel print and eject object">eject</button>
+				<br>
+				<span id=status></span>
 			</form>
 		</div>
 		<div id=view class="view" ></div>
 		<div class=logo>
-		    Vis/Printer - http://hirnsohle.de/VisPrinter/ - © 2012 Paul Geisler - 
-		    <a href="README.html">Manual - Credits - Examples</a> -
-		    <a href="javascript:changeCSS('full.css')">full UI</a> -
-		    <a href="javascript:changeCSS('compact.css')">compact UI</a>
+			Vis/Printer - http://hirnsohle.de/VisPrinter/ - © 2012 Paul Geisler - 
+			<a href="README.html">Manual - Credits - Examples</a> -
+			<a href="javascript:changeCSS('full.css')">full UI</a> -
+			<a href="javascript:changeCSS('compact.css')">compact UI</a>
 		</div>
 		<div id=progress><div><div id=progressBar><span id=progressName></span></div></div><a class=cancel href='javascript:VisPrinter.cancel()'>cancel</a></div>
  <script>

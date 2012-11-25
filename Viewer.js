@@ -101,6 +101,7 @@ Viewer=function(container) {
 	};
 
 	this.showAll=function(){
+		if(!this.mesh) return;
 		var sphere=this.mesh.getBoundingSphere();
 		this.posZ=sphere.radius*3;
 	}
