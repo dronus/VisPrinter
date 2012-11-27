@@ -32,7 +32,7 @@
 		<div class=menuPane>
 			<form onsubmit="return false">
 				<h2>connect printer</h2>
-				<button onclick="VisPrinter.cmd('reset')"   title="reset the printer">reset</button> <span id=connection></span>
+				<span class=not_online>not connected</span><span class=online>connected</span> <button onclick="VisPrinter.cmd('reset')"   title="reset the printer">reset</button>
 			</form>
 			<form class=online onsubmit="VisPrinter.cmd(this.cmd.value); return false;" ><h2>send gcode</h2>&gt;<input name=cmd title="issue command by pressing <enter>"></form>
 			<form class=online onsubmit="return false;">

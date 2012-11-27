@@ -13,7 +13,7 @@
 <body>
         <style id=connectionStyle></style>
         <style id=slicingStyle>.sliced{visibility: hidden;}</style>
-	<style id=printingStyle>.printing{visibility: hidden;}</style>
+	<style id=stateStyle></style>
 	<style>
 		.pane, html, body{
 			margin: 0px;
@@ -103,9 +103,9 @@
 		<h1>Main Menu</h1>
 		<table class=menu>
 			<tr>
-				<td onclick="VisPrinter.cmd('pause')">pause</td>
-				<td onclick="VisPrinter.cmd('resume')">resume</td>
-				<td onclick="VisPrinter.eject()">eject</td>
+				<td class="printing not_paused" onclick="VisPrinter.cmd('pause')">pause</td>
+				<td class="paused" onclick="VisPrinter.cmd('resume')">resume</td>
+				<td class="not_printing" onclick="VisPrinter.eject()">eject</td>
 			</tr>
 			<tr>
 				<td onclick="VisPrinter.cmd('reset')" class=action>reset</td>
@@ -118,7 +118,7 @@
 	<div class=pane id=consolePane>
 		<h1>Log</h1>
 		<table class=menu>
-			<tr><td colspan=2 rowspan=2 style="width:205px"><textarea class=console id="console"></textarea></td><td><span id=connection></span></td></tr>
+			<tr><td colspan=2 rowspan=2 style="width:205px"><textarea class=console id="console"></textarea></td><td></td></tr>
 			<tr><td onclick="goto('mainPane')">back</td></tr>
 		</table>
 	</div>

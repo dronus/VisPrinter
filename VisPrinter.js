@@ -352,6 +352,10 @@ VisPrinter=new function(){
 	this.resume=function(){
 		this.cmd("resume");
 	}
+
+	this.cancel=function(){
+            this.httpGet('cancel');
+	}
 	
 	this.update=function(){
 		//viewer.mesh=viewer.buildMesh(this.csgWorker.getPolygons(this.sceneTree,'root'));

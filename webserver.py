@@ -11,6 +11,7 @@ def recv_printer(line):
     recv_buffer+=[line]
 printer.recvlisteners+=[recv_printer]
 progress="Idle 0"
+processes=[]
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -72,7 +73,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def serve_slic3r(self,session_id,config):
 	global progress
-	progress="Slicing... 0"
+	progress="Slicing... 1"
         self.send_response(200)
         self.end_headers()
         # invoke the slic3r with progress indicator
@@ -80,7 +81,16 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	# pass resulting .gcode file content to client
 	gcode=open('tmp/'+session_id+'.gcode', 'r').read()
 	self.wfile.write(gcode)
+	progress="Slicing... 100"
 
+    def serve_cancel(self, session_id):
+	global progress 
+	for process in processes:
+		processes.remove(process)
+		process.kill()
+	if printer.p.printing:
+		printer.onecmd('pause')
+    
     def serve_state(self,session_id):
 	global progress
         self.send_response(200)
@@ -107,34 +117,29 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             progress="Slicing... "+str(30+int(match.group(1))*70/self.slic3r_layers)
             print 'Slic3r progress:',progress
 
-    def monitor(self, fd, callback): 
-	pipe=os.fdopen(fd)
-	while True:
-		line=pipe.readline()
-		if not line: break
-		callback(line)
-	os.close(fd)
-
- 
     # run a command and collect stderr, stdout to a buffer for interactive access
     # this is useful to serve a progress indicator for commands providing some progress output
     def call_monitored(self, cmdline, callback):
 	global progress
-        # create a pipe to capture stderr,stdout 
-	pipeout,pipein=os.pipe()
-        # child thread, collect the command's output
-        thread.start_new_thread(self.monitor,(pipeout,callback))
-	# main thread, run the command
-	subprocess.call(cmdline,shell=True,stdout=pipein,stderr=pipein)
-	os.close(pipein)
-
+        global processes
+	
+	# run the command
+	process=subprocess.Popen(cmdline,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+	processes.append(process)
+	while process.poll()==None:
+		line=process.stdout.readline()
+		if not line: break
+		callback(line)
+	if(process in processes):
+		processes.remove(process)
+	
     def save_tmp(self,name,content):
        # copy content to file
        print 'Saving to ',name
        f=open(name,'w')
        f.write(content)
        f.close()
-        
+
     def save_uploads(self, session_id):
         contenttype_header=self.headers.getheader('content-type',False)
         if not contenttype_header:
@@ -193,6 +198,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.serve_slic3r(session_id,url_params.get('config')[0])
             elif url_parts.path=='/state':
                 self.serve_state(session_id)
+            elif url_parts.path=='/cancel':
+                self.serve_cancel(session_id)
             elif url_parts.path=='/upload':
 		self.send_response(200)
 		self.end_headers()
