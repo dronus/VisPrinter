@@ -27,20 +27,21 @@
 <body>
 		<style id=connectionStyle></style>
 		<style id=slicingStyle>.sliced{visibility: hidden;}</style>
+		<style id=stateStyle></style>
 		<div class=treePane><textarea class=console id="console"></textarea></div>
 		<div class=menuPane>
 			<form onsubmit="return false">
 				<h2>connect printer</h2>
 				<button onclick="VisPrinter.cmd('reset')"   title="reset the printer">reset</button> <span id=connection></span>
 			</form>
-			<form class=connected onsubmit="VisPrinter.cmd(this.cmd.value); return false;" ><h2>send gcode</h2>&gt;<input name=cmd title="issue command by pressing <enter>"></form>
-			<form class=connected onsubmit="return false;">
+			<form class=online onsubmit="VisPrinter.cmd(this.cmd.value); return false;" ><h2>send gcode</h2>&gt;<input name=cmd title="issue command by pressing <enter>"></form>
+			<form class=online onsubmit="return false;">
 				<h2>move and calibrate</h2> 
 				X<input name=X size=2> Y<input name=Y size=2> Z<input name=Z size=2> E<input name=E size=2>
 				<button onclick="VisPrinter.goto(this.parentNode)" title="go to entered position">go</button>
 				<button onclick="VisPrinter.cmd('G1 X0 Y0 Z0')" title="go to X0 Y0 Z0">origin</button><button onclick="VisPrinter.cmd('G28')" title="calibrate home position">home</button>
 			</form>
-			<form class=connected onsubmit="return false;">
+			<form class=online onsubmit="return false;">
 				<h2>heating</h2> 
 				extruder<input name=t_extruder size=2> bed<input name=t_bed size=2> 
 				<button onclick="VisPrinter.cmd('M104 S'+this.parentNode.t_extruder.value); VisPrinter.cmd('M140 S'+this.parentNode.t_bed.value)">set</button>
@@ -57,7 +58,7 @@
 				<button onclick="VisPrinter.editConfig()" title="edit current settings">edit</button>
 				<button onclick="VisPrinter.slice()" title="slice this object according to current settings">slice</button>
 			</form>
-			<form class=connected onsubmit="return false">
+			<form class=online onsubmit="return false">
 				<h2>print</h2>
 				<button onclick="VisPrinter.prepare()" title="prepare printer for printing (optional)">prepare</button>
 				<button onclick="VisPrinter.print()"  class=sliced  title="print this object">print</button>

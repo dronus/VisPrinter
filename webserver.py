@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob,traceback,re,thread
+import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob,traceback,re,thread,json
 from SocketServer import ThreadingMixIn
 import pronsole
 printer=pronsole.pronsole()
@@ -56,14 +56,16 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.wfile.write(filename+"\n")
 
     # issue command via pronsole.py and return result       
-    def serve_pronsole(self,cmd):
+    def serve_pronsole(self,cmds):
         self.send_response(200)
         self.end_headers()
         # install stdout T-junction to pass pronsole's 'print' output to the client
         #tee=Tee(self.wfile)
         # issue command
         try:
-            printer.onecmd(cmd)
+            parts=cmds.split('\n')
+            for cmd in parts:
+	            printer.onecmd(cmd)
         except Exception as e:
             print e
         #tee.close()
@@ -79,13 +81,21 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	gcode=open('tmp/'+session_id+'.gcode', 'r').read()
 	self.wfile.write(gcode)
 
-    def serve_progress(self,session_id):
+    def serve_state(self,session_id):
 	global progress
         self.send_response(200)
         self.end_headers()
 	if printer.p.printing:
 		progress="Printing... "+str(int(99*float(printer.p.queueindex)/len(printer.p.mainqueue))+1)
-	self.wfile.write(progress)
+	state={
+		'online':printer.p.online,
+		'printing': printer.p.printing,
+		'paused':printer.p.paused,
+		'clear':printer.p.clear,
+		'progress':progress
+	}
+	_json=json.dumps(state, indent=4)
+	self.wfile.write(_json)
  
     def monitor_slic3r(self,line):
         global progress
@@ -181,8 +191,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.serve_printer()      
             elif url_parts.path=='/slic3r':
                 self.serve_slic3r(session_id,url_params.get('config')[0])
-            elif url_parts.path=='/progress':
-                self.serve_progress(session_id)
+            elif url_parts.path=='/state':
+                self.serve_state(session_id)
             elif url_parts.path=='/upload':
 		self.send_response(200)
 		self.end_headers()

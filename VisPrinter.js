@@ -152,6 +152,24 @@ VisPrinter=new function(){
 		bar.style.width=(p*100)+'%';
 	}
 
+	this.onState=function(response){
+		this.state=JSON.parse(response);
+		
+		this.onProgress(this.state.progress);
+
+		// all boolean state properties are reflected by a visibility CSS class 
+		// named .property or .not_property that can be used to show UI elements 
+		// depending on state
+		var stateStyle="";
+		for(key in this.state)
+			if      (this.state[key]===false)
+				stateStyle+="."+key+"{visibility: hidden;}\n"
+			else if (this.state[key]===true ) 
+				stateStyle+=".not_"+key+"{visibility: hidden;}\n";
+		var stateElement=document.getElementById('stateStyle');
+		if (stateStyle!=stateElement.innerHTML) stateElement.innerHTML=stateStyle;
+	}
+
 	this.onProgress=function(response){
 		if(!response) response='Idle 0';
 		var parts=response.split(' ');
@@ -159,13 +177,6 @@ VisPrinter=new function(){
 		var progress=parseInt(parts[1]);
 
 		this.progress(caption, progress/100);
-
-		// check again until completed
-		if(progress!=-1) window.setTimeout(function(){
-			VisPrinter.httpGet('progress',function(response){
-				VisPrinter.onProgress(response);
-			});
-		},1000);
 	}
 
 	this.slice=function(){
@@ -177,7 +188,6 @@ VisPrinter=new function(){
 		var config=document.getElementById('config').value;
 		var onUploaded=function(response){
 			this.console.value+="\nSlicing...\n";
-			VisPrinter.onProgress();
 			VisPrinter.httpGet('slic3r?config='+config,function(response){
 				VisPrinter.console.value+="\nSlicing complete.\n";
 				VisPrinter.onSliced(response)
@@ -217,9 +227,7 @@ VisPrinter=new function(){
 		var session=this.getSession();
 
 		this.console.value+="\nPrinting...\n";
-		this.cmd("load tmp/"+session+".gcode");
-		this.cmd("print");
-		VisPrinter.onProgress();
+		this.cmd("load tmp/"+session+".gcode\nprint");
 	}
 	
 	this.cmd=function(cmd,callback){
@@ -275,7 +283,6 @@ VisPrinter=new function(){
 	}
 	
 	this.check=function(){
-
             VisPrinter.httpGet('printer',function(result){
                 VisPrinter.onCheck(result);
             });
@@ -293,12 +300,21 @@ VisPrinter=new function(){
             for(var i=0; i<lines.length; i++){
                 var line=lines[i];
                 if(!line) continue;
-                if(line.indexOf('ok ')==0) this.connected=true;
+                if(line.indexOf('ok ')==0) {
+			this.connected=true;
+			    document.getElementById('connection'     ).innerHTML='connected';
+			    document.getElementById('connectionStyle').innerHTML='';
+		}
 		this.console.value+=line+"\n";
             }
-	    document.getElementById('connection'     ).innerHTML= this.connected ? 'connected' : 'not connected';
-            document.getElementById('connectionStyle').innerHTML= this.connected ?  '' : '.connected{visibility: hidden;}';
         }
+
+	this.checkState=function(){
+            VisPrinter.httpGet('state',function(result){
+                VisPrinter.onState(result);
+            });
+            window.setTimeout(function(e){VisPrinter.checkState();},500);
+	}
 
 	this.hashchange=function(data)
 	{
@@ -362,6 +378,7 @@ VisPrinter=new function(){
 		var VisPrinter=this;
 		window.addEventListener('keypress', function(e){VisPrinter.keypress(e)} ,false);
 		this.check();
+		this.checkState();
 		this.httpGet('configs',function(response){VisPrinter.onConfigs(response)});
 //		window.addEventListener("hashchange", function(e){VisPrinter.hashchange(e)}, false);
 //		this.hashchange();
