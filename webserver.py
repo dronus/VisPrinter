@@ -10,7 +10,8 @@ def recv_printer(line):
     print "OUTPUT:",line
     recv_buffer+=[line]
 printer.recvlisteners+=[recv_printer]
-progress=0
+progress="Idle 0"
+
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def serve_printer(self):
@@ -68,6 +69,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         #tee.close()
 
     def serve_slic3r(self,session_id,config):
+	global progress
+	progress="Slicing... 0"
         self.send_response(200)
         self.end_headers()
         # invoke the slic3r with progress indicator
@@ -77,9 +80,12 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	self.wfile.write(gcode)
 
     def serve_progress(self,session_id):
+	global progress
         self.send_response(200)
         self.end_headers()
-	self.wfile.write(str(progress))
+	if printer.p.printing:
+		progress="Printing... "+str(int(99*float(printer.p.queueindex)/len(printer.p.mainqueue))+1)
+	self.wfile.write(progress)
  
     def monitor_slic3r(self,line):
         global progress
@@ -88,7 +94,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.slic3r_layers=int(match.group(1))
         match=re.match('Filling layer ([0-9]+)',line)
         if match:
-            progress=30+int(match.group(1))*70/self.slic3r_layers
+            progress="Slicing... "+str(30+int(match.group(1))*70/self.slic3r_layers)
             print 'Slic3r progress:',progress
 
     def monitor(self, fd, callback): 
@@ -104,7 +110,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     # this is useful to serve a progress indicator for commands providing some progress output
     def call_monitored(self, cmdline, callback):
 	global progress
-	progress=0
         # create a pipe to capture stderr,stdout 
 	pipeout,pipein=os.pipe()
         # child thread, collect the command's output

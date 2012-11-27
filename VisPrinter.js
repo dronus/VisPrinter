@@ -33,7 +33,10 @@ VisPrinter=new function(){
 			var text=e.target.result;
 			var suffix=file.name.substring(file.name.lastIndexOf('.'));
 			if     (suffix=='.stl'  ) VisPrinter.parseStl(text);
-			else if(suffix=='.gcode') VisPrinter.onSliced(text);
+			else if(suffix=='.gcode') {
+				VisPrinter.uploadGcode(text);
+				VisPrinter.onSliced(text);
+			}
 			else alert('Bad file type '+suffix);
 		}
 		reader.onerror=function(e){
@@ -145,19 +148,22 @@ VisPrinter=new function(){
 		if (!p || p==1) indic.style.display='none';
 		else            indic.style.display='block';
 		if(p==1) p=0;
-		if(p<0.1) p=0.1;
+		if(p<0.02) p=0.02;
 		bar.style.width=(p*100)+'%';
 	}
 
-	this.onProgress=function(caption,response){
-		if(!response) response='0';
-		var progress=parseInt(response);
+	this.onProgress=function(response){
+		if(!response) response='Idle 0';
+		var parts=response.split(' ');
+		var caption=parts[0];
+		var progress=parseInt(parts[1]);
+
 		this.progress(caption, progress/100);
 
 		// check again until completed
 		if(progress!=-1) window.setTimeout(function(){
 			VisPrinter.httpGet('progress',function(response){
-				VisPrinter.onProgress(caption, response);
+				VisPrinter.onProgress(response);
 			});
 		},1000);
 	}
@@ -170,14 +176,27 @@ VisPrinter=new function(){
 
 		var config=document.getElementById('config').value;
 		var onUploaded=function(response){
-			VisPrinter.onProgress('Slicing...');
+			this.console.value+="\nSlicing...\n";
+			VisPrinter.onProgress();
 			VisPrinter.httpGet('slic3r?config='+config,function(response){
+				VisPrinter.console.value+="\nSlicing complete.\n";
 				VisPrinter.onSliced(response)
 			});
 		}
 
 		this.httpPost('upload',{'stl':this.stl}, onUploaded);
-		VisPrinter.progress("Uploading...",.5);
+		VisPrinter.progress("Uploading stl...",.5);
+		this.console.value+="\nUploading stl...\n";
+	}
+	this.uploadGcode=function(text){
+		var onUploaded=function(response){
+			VisPrinter.console.value+="\nUploaded.\n";
+			VisPrinter.progress();
+		}
+
+		this.httpPost('upload',{'gcode':text}, onUploaded);
+		this.console.value+="\nUploading gcode...\n";
+		VisPrinter.progress("Uploading gcode...",.5);
 	}
 
 	this.editConfig=function(){
@@ -196,9 +215,11 @@ VisPrinter=new function(){
 
 	this.print=function(){
 		var session=this.getSession();
-		alert(session);
+
+		this.console.value+="\nPrinting...\n";
 		this.cmd("load tmp/"+session+".gcode");
 		this.cmd("print");
+		VisPrinter.onProgress();
 	}
 	
 	this.cmd=function(cmd,callback){
@@ -215,7 +236,6 @@ VisPrinter=new function(){
 	}
 		
 	this.onSliced=function(gcode){
-		this.console.value+=gcode;
 		this.gcode=gcode;
 
 		var mesh = new GL.Mesh({ triangles: false, lines: true, colors: true });
@@ -262,12 +282,12 @@ VisPrinter=new function(){
 
 	    if(!this.connected) {
 	        this.connect();
-	        window.setTimeout(function(e){VisPrinter.check();},1000);
+	        window.setTimeout(function(e){VisPrinter.check();},10000);
 	    }
             else
                 window.setTimeout(function(e){VisPrinter.check();},1000);
 	}
-	
+
         this.onCheck=function(result){
             var lines=result.split('\n')            
             for(var i=0; i<lines.length; i++){
@@ -276,8 +296,8 @@ VisPrinter=new function(){
                 if(line.indexOf('ok ')==0) this.connected=true;
 		this.console.value+=line+"\n";
             }
-	    document.getElementById('connection'     ).innerHTML= this.connection ? 'connected' : 'not connected';
-            document.getElementById('connectionStyle').innerHTML= this.connection ?  '' : '.connected{visibility: hidden;}';
+	    document.getElementById('connection'     ).innerHTML= this.connected ? 'connected' : 'not connected';
+            document.getElementById('connectionStyle').innerHTML= this.connected ?  '' : '.connected{visibility: hidden;}';
         }
 
 	this.hashchange=function(data)
@@ -309,6 +329,13 @@ VisPrinter=new function(){
             select.add(option);
         }    
     }
+
+	this.pause=function(){
+		this.cmd("pause");
+	}
+	this.resume=function(){
+		this.cmd("resume");
+	}
 	
 	this.update=function(){
 		//viewer.mesh=viewer.buildMesh(this.csgWorker.getPolygons(this.sceneTree,'root'));

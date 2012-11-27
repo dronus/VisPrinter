@@ -31,7 +31,7 @@
 		<div class=menuPane>
 			<form onsubmit="return false">
 				<h2>connect printer</h2>
-				<span id=connection></span>
+				<button onclick="VisPrinter.cmd('reset')"   title="reset the printer">reset</button> <span id=connection></span>
 			</form>
 			<form class=connected onsubmit="VisPrinter.cmd(this.cmd.value); return false;" ><h2>send gcode</h2>&gt;<input name=cmd title="issue command by pressing <enter>"></form>
 			<form class=connected onsubmit="return false;">
@@ -61,7 +61,8 @@
 				<h2>print</h2>
 				<button onclick="VisPrinter.prepare()" title="prepare printer for printing (optional)">prepare</button>
 				<button onclick="VisPrinter.print()"  class=sliced  title="print this object">print</button>
-				<button onclick="VisPrinter.pause()"   title="pause printing">pause</button>
+				<button onclick="VisPrinter.cmd('pause')"   title="pause printing">pause</button>
+				<button onclick="VisPrinter.cmd('resume')"   title="resume a paused printing">resume</button>
 				<button onclick="VisPrinter.eject()"   title="cancel print and eject object">eject</button>
 				<br>
 				<span id=status></span>
