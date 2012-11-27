@@ -13,44 +13,7 @@
 <body>
         <style id=connectionStyle></style>
         <style id=slicingStyle>.sliced{visibility: hidden;}</style>
-<!--	<div class=treePane><textarea class=console id="console"></textarea></div>-->
-<!--	<div class=menuPane id=old>
-		<form onsubmit="return false">
-		    <h2>connect printer</h2>
-		    <span id=connection></span>
-		</form>
-		<form class=connected onsubmit="return false;">
-		    <h2>move and calibrate</h2> 
-		    X<input name=X size=2> Y<input name=Y size=2> Z<input name=Z size=2> E<input name=E size=2>
-		    <button onclick="VisPrinter.goto(this.parentNode)" title="go to entered position">go</button>
-		    <button onclick="VisPrinter.cmd('G1 X0 Y0 Z0')" title="go to X0 Y0 Z0">origin</button><button onclick="VisPrinter.cmd('G28')" title="calibrate home position">home</button>
-		</form>
-		<form class=connected onsubmit="return false;">
-		    <h2>heating</h2> 
-		    extruder<input name=t_extruder size=2> bed<input name=t_bed size=2> 
-		    <button onclick="VisPrinter.cmd('M104 S'+this.parentNode.t_extruder.value); VisPrinter.cmd('M140 S'+this.parentNode.t_bed.value)">set</button>
-		    <button onclick="VisPrinter.cmd('M104 S0'); VisPrinter.cmd('M140 S0')" title="stop heating">off</button>
-		</form>
-		<form onsubmit="return false">
-		    <h2>slice</h2>
-		<input caption=Import name=stl type=file onchange="VisPrinter.loadStl(this.files[0])">
-		<button onclick="VisPrinter.loadStl(this.parentNode.stl.files[0])" title="load this file again">reload</button>
-		<br>
-		<select name=config id=config></select> 
-		<button onclick="VisPrinter.editConfig()" title="edit current settings">edit</button>
-		<button onclick="VisPrinter.slice()" title="slice this object according to current settings">slice</button>
-		</form>
-		<form class=connected onsubmit="return false">
-		    <h2>print</h2>
-		    <button onclick="VisPrinter.prepare()" title="prepare printer for printing (optional)">prepare</button>
-		    <button onclick="VisPrinter.print()"  class=sliced  title="print this object">print</button>
-		    <button onclick="VisPrinter.pause()"   title="pause printing">pause</button>
-		    <button onclick="VisPrinter.eject()"   title="cancel print and eject object">eject</button>
-		    <br>
-		    <span id=status></span>
-		</form>
-	</div>
--->
+	<style id=printingStyle>.printing{visibility: hidden;}</style>
 	<style>
 		.pane, html, body{
 			margin: 0px;
@@ -136,19 +99,43 @@
 		}
 	</script>
 
-	<div class=pane id=main style="display: block;">
+	<div class=pane id=mainPane style="display: block;">
 		<h1>Main Menu</h1>
 		<table class=menu>
-			<tr><td colspan=2 rowspan=2 style="width:205px"><textarea class=console id="console"></textarea></td><td><span id=connection></span></td></tr>
-			<tr><td onclick="goto('print')">MANUAL<br>MENU</td></tr>
+			<tr>
+				<td onclick="VisPrinter.cmd('pause')">pause</td>
+				<td onclick="VisPrinter.cmd('resume')">resume</td>
+				<td onclick="VisPrinter.eject()">eject</td>
+			</tr>
+			<tr>
+				<td onclick="VisPrinter.cmd('reset')" class=action>reset</td>
+				<td onclick="goto('consolePane')">CONSOLE<br>PANEL</td>
+				<td onclick="goto('manualPane')">MANUAL<br>MENU</td>
+			</tr>
 		</table>
 	</div>
 
-	<div class=pane id=print>
-		<h1>Print</h1>
+	<div class=pane id=consolePane>
+		<h1>Log</h1>
 		<table class=menu>
-			<tr><td></td><td></td><td class=action onclick="VisPrinter.cmd('G28')">GOTO HOME</td></tr>
-			<tr><td></td><td></td><td onclick="goto('main')">back</td></tr>
+			<tr><td colspan=2 rowspan=2 style="width:205px"><textarea class=console id="console"></textarea></td><td><span id=connection></span></td></tr>
+			<tr><td onclick="goto('mainPane')">back</td></tr>
+		</table>
+	</div>
+
+	<div class=pane id=manualPane>
+		<h1>Manual Control</h1>
+		<table class=menu>
+			<tr>
+				<td onclick="VisPrinter.prepare()">PREHEAT</td>
+				<td onclick="VisPrinter.cmd('M104 S0'); VisPrinter.cmd('M140 S0')" >STOP<br>HEATING</td> 
+				<td class=action onclick="VisPrinter.cmd('G28')">GOTO HOME</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td></td>
+				<td onclick="goto('mainPane')">back</td>
+			</tr>
 		</table>
 	</div>
 
