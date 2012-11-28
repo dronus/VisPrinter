@@ -1,18 +1,40 @@
 #!/usr/bin/python
 
-import settings,sys,string,cgi,subprocess,random,os,Cookie,BaseHTTPServer,urlparse,glob,traceback,re,thread,json
-from SocketServer import ThreadingMixIn
+import sys
+import os
+import subprocess
+import traceback
+import thread
+import glob
+import re
+import random
+import string
+import urlparse
+import json
+import cgi
+import Cookie
+import BaseHTTPServer
+import SocketServer
+
 import pronsole
+import settings
+
+# our pronterface instance
 printer=pronsole.pronsole()
+#progress indicator state
+progress="Idle 0"
+# running processes (eg. Slic3r.pl)
+processes=[]
+# printer output buffer
 recv_buffer=[]
+
+# install printer output dissector
 def recv_printer(line):
     global recv_buffer
-    print "OUTPUT:",line
-    recv_buffer+=[line]
-printer.recvlisteners+=[recv_printer]
-progress="Idle 0"
-processes=[]
+    recv_buffer.append(line)
+printer.recvlisteners.append(recv_printer)
 
+# server request handler
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def serve_printer(self):
@@ -27,22 +49,17 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def serve_file(self,url_path):
         # map URL path to file in our directory
         file_path=os.path.abspath('./'+url_path)
-        
         # prevent the client from accessing any file outside our directory
         server_path=os.path.abspath('.')
         if not file_path.startswith(server_path):
             raise Exception("Illegal path: "+path)
-                    
         # open the file to serve
         f = open(file_path)
-
         # send headers
         self.send_response(200)
-    #    self.send_header('Content-type',	'text/html')
         # establish a random session cookie 
         if not "Cookie" in self.headers or self.headers.get('Cookie').find('session=')==-1:
             self.send_header('Set-Cookie','session='+str(random.randint(0,0xFFFFFFFF)));
-
         self.end_headers()
         #send file content
         self.wfile.write(f.read())
@@ -60,8 +77,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def serve_pronsole(self,cmds):
         self.send_response(200)
         self.end_headers()
-        # install stdout T-junction to pass pronsole's 'print' output to the client
-        #tee=Tee(self.wfile)
         # issue command
         try:
             parts=cmds.split('\n')
@@ -69,7 +84,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	            printer.onecmd(cmd)
         except Exception as e:
             print e
-        #tee.close()
 
     def serve_slic3r(self,session_id,config):
 	global progress
@@ -124,7 +138,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         global processes
 	
 	# run the command
-	process=subprocess.Popen(cmdline,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+	process=subprocess.Popen(cmdline.split(' '),stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 	processes.append(process)
 	while process.poll()==None:
 		line=process.stdout.readline()
@@ -177,7 +191,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.serve_request()
         
     def serve_request(self):
-
         try:
             # split URL parts (path, querystring)
             url_parts =urlparse.urlparse(self.path)
@@ -205,21 +218,20 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.end_headers()
             else:
                 self.serve_file(url_parts.path)
-           
         except Exception as e:
             print traceback.format_exc()
             self.send_error(404,'Request to "%s" failed: %s' % (self.path, str(e)) )
 
-class ThreadingServer(ThreadingMixIn, BaseHTTPServer.HTTPServer):
+# multithreading server
+class ThreadingServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     pass
-
 
 if __name__ == '__main__':
     try:
         os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
         server = ThreadingServer(('', settings.port), RequestHandler)
         #server = BaseHTTPServer.HTTPServer(('', settings.port), RequestHandler)
-        print 'server running on port '+str(settings.port)
+        print 'Server running on port '+str(settings.port)
         server.serve_forever()
     except KeyboardInterrupt:
         server.socket.close()
