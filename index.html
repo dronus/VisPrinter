@@ -5,24 +5,10 @@
 <head>
 	<title>Vis/Printer</title>
 	<meta http-equiv="content-type" content="text/html; charset=utf8">
-<!--	<script src="utils.js"></script>-->
 	<script src="Viewer.js"></script>
 	<script src="lightgl.js"></script>
-	<script src="util.js"></script>
-<!--	<script src="touchHandler.js"></script>-->
 	<script src="VisPrinter.js"></script>
 	<link rel="stylesheet" type="text/css" href="base.css">	
-	<link rel="stylesheet" type="text/css" href="full.css">
-	<script>
-		function changeCSS(cssFile) {
-			var oldlink = document.getElementsByTagName("link").item(1);
-			var newlink = document.createElement("link")
-			newlink.setAttribute("rel", "stylesheet");
-			newlink.setAttribute("type", "text/css");
-			newlink.setAttribute("href", cssFile);
-			document.getElementsByTagName("head").item(0).replaceChild(newlink, oldlink);
-		}
-	</script>
 </head>
 <body>
 		<style id=connectionStyle></style>
@@ -72,22 +58,12 @@
 		<div id=view class="view" ></div>
 		<div class=logo>
 			Vis/Printer - http://hirnsohle.de/VisPrinter/ - © 2012 Paul Geisler - 
-			<a href="README.html">Manual - Credits - Examples</a> -
-			<a href="javascript:changeCSS('full.css')">full UI</a> -
-			<a href="javascript:changeCSS('compact.css')">compact UI</a>
+			<a href="README.html">Manual - Credits - Examples</a>
 		</div>
 		<div id=progress><div><div id=progressBar><span id=progressName></span></div></div><a class=cancel href='javascript:VisPrinter.cancel()'>cancel</a></div>
- <script>
-
-	HTMLElement.prototype.removeClass=function(className){
-		var tmp=" "+this.className+" ";
-		tmp=tmp.replace(" "+className+" "," ");
-		tmp=tmp.trim();
-		this.className=tmp;
-	}
-
-	VisPrinter.attach();
- </script>
+	<script>
+		VisPrinter.attach();
+	</script>
 </body>
 </html>
 

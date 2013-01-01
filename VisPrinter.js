@@ -386,16 +386,6 @@ VisPrinter=new function(){
 		}	
 	}
 
-	// issue printer pause command
-	this.pause=function(){
-		this.cmd("pause");
-	}
-	
-	// issue printer resume command
-	this.resume=function(){
-		this.cmd("resume");
-	}
-
 	// request server /cancel 
 	// this cancels the current operation, that may be a slicing or printing operation
 	this.cancel=function(){
